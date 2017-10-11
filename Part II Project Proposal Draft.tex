@@ -1,0 +1,50 @@
+\documentclass[12pt, letterpaper, twoside]{article}
+\usepackage[utf8]{inputenc}
+
+\author{Charlie Crisp, Pembroke College }
+\date{October 2017}
+
+\newcommand{\horrule}[1]{\rule{\linewidth}{#1}} % Create horizontal rule command with 1 argument of height
+
+\title{	
+	\normalfont \normalsize 
+	\textsc{Computer Science Tripos - Part II - Project Proposal} \\ [25pt]
+	\horrule{0.5pt} \\[0.4cm] % Thin top horizontal rule
+	\huge Building a Blockchain Library for OCaml\\ % The assignment title
+	\horrule{2pt} \\[0.5cm] % Thick bottom horizontal rule
+}
+
+\author{Charlie Crisp, Pembroke College }
+
+\date{\normalsize\today} % Today's date or a custom date
+
+\begin{document}
+	
+	\maketitle
+	
+	\noindent \textbf{Project Supervisor:} KC Sivaramakrishnan \\
+	\textbf{Director of Studies:} Anil Madhavapeddy \\
+	\textbf{Project Overseers:} Timothy Jones \& Marcelo Fiore\\
+	
+	\section{Introduction}
+	
+	Blockchain technology has generated a lot of interest in recent times, but mostly in the field of cryptocurrencies.
+	With a simple Proof of Work consensus algorithm, the blockchain can be used to build a distributed ledger of transactions which is only vulnerable to attack, when more than half of the workforce is fraudulent. \\
+	I will build a pure OCaml, reusable blockchain library to allow the creation of distributed, secure ledgers, which are agreed upon by consensus. The library will allow for the creation of blockchain applications outside the scope of cryptocurrencies. \\
+	It will be built on top of Irmin \cite{Irmin} - a distributed database with git-like version control features. Being pure OCaml, the blockchain nodes can be compiled to unikernels or JavaScript to run in the browser. I will evaluate the blockchain by prototyping a decentralised lending library and evaluating the platform’s speed and resilience.
+	\section{Starting point}
+	The project will build upon functionality provided by Irmin \cite{Irmin} which is a distributed database system. \\
+	THIS IS COPIED FROM https://mirage.io/blog/introducing-irmin\\
+	Irmin is a library to persist and synchronize distributed data structures both on-disk and in-memory. It enables a style of programming very similar to the Git workflow, where distributed nodes fork, fetch, merge and push data between each other. The general idea is that you want every active node to get a local (partial) copy of a global database and always be very explicit about how and when data is shared and migrated..
+	\section{Resources required}
+	\section{Work to be completed}
+	\section{Evaluation criteria}
+	\section{Timetable}
+	\section{References}
+	\begin{thebibliography}{9}
+		\bibitem{Irmin} 
+		Irmin - A pure OCaml, distributed database that follows the same design principles as Git.\\ \textbf{https://github.com/mirage/irmin}
+		
+	\end{thebibliography}
+
+\end{document}
