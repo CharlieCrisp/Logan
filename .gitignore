@@ -225,4 +225,6 @@ TSWLatexianTemp*
 # expex forward references with \gathertags
 *-tags.tex
 
+.vscode/
+
 # End of https://www.gitignore.io/api/latex
