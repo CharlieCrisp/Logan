@@ -11,6 +11,11 @@ opam install ${OPAM_DEPENDS}
 eval `opam config env`
 
 #ocamlfind list
-
+echo "Starting Compilation"
 jbuilder build testfile.exe
-_build/default/testfile.exe
+echo "Completed Compilation"
+
+echo "Starting Tests"
+jbuilder build test/testMain.exe
+_build/default/test/testMain.exe
+echo "Completed Tests"
