@@ -1,3 +1,3 @@
 language: c
-script: bash -ex .travis-ci.sh
+script: bash -e .travis-ci.sh
 sudo: required
