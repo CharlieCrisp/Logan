@@ -228,6 +228,13 @@ TSWLatexianTemp*
 .vscode/
 _build/
 .DS_Store
-*.merlin
+src/.merlin
+test/.merlin
+Makefile
+configure
+setup.data
+setup.ml
+*.byte
+*.native
 
 # End of https://www.gitignore.io/api/latex

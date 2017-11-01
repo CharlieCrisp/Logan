@@ -1,5 +1,8 @@
 # Edit this for your own project dependencies
-OPAM_DEPENDS="ocamlfind ounit re jbuilder"
+PURPLE='\033[1;35m'
+NC='\033[0m'
+
+OPAM_DEPENDS="ocamlfind ounit re jbuilder oasis"
 	 
 echo "yes" | sudo add-apt-repository ppa:avsm/ppa
 sudo apt-get update -qq
@@ -10,12 +13,13 @@ opam init
 opam install ${OPAM_DEPENDS}
 eval `opam config env`
 
-#ocamlfind list
-echo "Starting Compilation"
-jbuilder build src/testfile.exe
-echo "Completed Compilation"
+echo "Setting up Oasis"
+oasis setup -setup-update dynamic
 
-echo "Starting Tests"
-jbuilder build test/testMain.exe
-_build/default/test/testMain.exe
-echo "Completed Tests"
+echo -e "${PURPLE}Starting Compilation${NC}"
+make
+echo -e "${PURPLE}Completed Compilation${NC}"
+
+echo -e "${PURPLE}Starting Unit Tests${NC}"
+./testMain.native
+echo -e "${PURPLE}Completed Unit Tests${NC}"

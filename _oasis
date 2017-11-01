@@ -1,0 +1,20 @@
+Name: Blockchain Library
+Version: 0.1
+Synopsis: A reusable Blockchain library
+Authors: Charlie Crisp <cc839@cam.ac.uk>
+License: LGPL with OCaml linking exception
+
+OASISFormat: 0.4
+BuildTools: ocamlbuild
+Plugins: META (0.4), DevFiles (0.4)
+
+Library "Minion"
+  Path: src
+  Modules: Minion, Testfile
+
+Executable "testMain"
+  Path: test
+  MainIs: testMain.ml
+  CompiledObject: native
+  BuildDepends:
+    oUnit
