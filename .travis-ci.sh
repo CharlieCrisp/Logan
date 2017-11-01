@@ -12,7 +12,7 @@ eval `opam config env`
 
 #ocamlfind list
 echo "Starting Compilation"
-jbuilder build testfile.exe
+jbuilder build src/testfile.exe
 echo "Completed Compilation"
 
 echo "Starting Tests"
