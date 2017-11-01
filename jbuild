@@ -1,0 +1,5 @@
+(jbuild_version 1)
+
+;; This declare the testfile executable implemented by testfile.ml
+(executable
+ ((name testfile)))
