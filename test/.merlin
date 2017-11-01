@@ -1,0 +1,6 @@
+B ../_build/default/test
+FLG -w -40
+PKG bytes
+PKG oUnit.advanced
+PKG ounit
+PKG unix
