@@ -2,7 +2,7 @@
 PURPLE='\033[1;35m'
 NC='\033[0m'
 
-OPAM_DEPENDS="ocamlfind ounit re jbuilder oasis"
+OPAM_DEPENDS="ocamlfind ounit re jbuilder ezirmin lwt cohttp cohttp-lwt-unix"
 	 
 echo "yes" | sudo add-apt-repository ppa:avsm/ppa
 sudo apt-get update -qq
@@ -13,13 +13,10 @@ opam init
 opam install ${OPAM_DEPENDS}
 eval `opam config env`
 
-echo "Setting up Oasis"
-oasis setup -setup-update dynamic
-
 echo -e "${PURPLE}Starting Compilation${NC}"
-make
+jbuilder build src/Leader/LeaderServer.exe
 echo -e "${PURPLE}Completed Compilation${NC}"
 
-echo -e "${PURPLE}Starting Unit Tests${NC}"
-./testMain.native
-echo -e "${PURPLE}Completed Unit Tests${NC}"
+# echo -e "${PURPLE}Starting Unit Tests${NC}"
+# _build/default/src/Leader/LeaderServer.exe
+# echo -e "${PURPLE}Completed Unit Tests${NC}"
