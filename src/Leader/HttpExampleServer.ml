@@ -2,6 +2,10 @@ open Lwt
 open Cohttp
 open Cohttp_lwt_unix
 
+(*
+This is an example of a http server
+This may be useful for providing the remote uri of the mempool/blockchain log
+*)
 
 let server =
   let callback _conn req body =
@@ -15,4 +19,6 @@ let server =
   in
   Server.create ~mode:(`TCP (`Port 8000)) (Server.make ~callback ())
 
+(*
 let () = ignore (Lwt_main.run server)
+*)

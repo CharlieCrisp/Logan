@@ -14,7 +14,7 @@ opam install ${OPAM_DEPENDS}
 eval `opam config env`
 
 echo -e "${PURPLE}Starting Compilation${NC}"
-jbuilder build src/Leader/LeaderServer.exe
+jbuilder build src/Leader/HttpExampleServer.exe
 echo -e "${PURPLE}Completed Compilation${NC}"
 
 # echo -e "${PURPLE}Starting Unit Tests${NC}"

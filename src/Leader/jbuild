@@ -1,5 +1,5 @@
 (jbuild_version 1)
 
 (executable
- ((name LeaderServer)
+ ((name HttpExampleServer)
   (libraries (lwt cohttp cohttp-lwt-unix))))
