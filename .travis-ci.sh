@@ -15,6 +15,7 @@ eval `opam config env`
 
 echo -e "${PURPLE}Starting Compilation${NC}"
 jbuilder build src/Leader/HttpExampleServer.exe
+jbuilder build src/Shared/TransactionRequest.ml
 echo -e "${PURPLE}Completed Compilation${NC}"
 
 # echo -e "${PURPLE}Starting Unit Tests${NC}"
