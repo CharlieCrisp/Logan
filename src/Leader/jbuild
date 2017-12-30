@@ -1,5 +1,7 @@
 (jbuild_version 1)
 
 (executable
- ((name HttpExampleServer)
-  (libraries (lwt cohttp cohttp-lwt-unix))))
+ ((name LogCreator)
+  (modules (LogCreator MemPoolReactor))
+  (modes (native))
+  (libraries (lwt.unix ezirmin tc))))
