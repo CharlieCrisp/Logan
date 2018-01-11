@@ -5,7 +5,8 @@
 	\usepackage{verbatim}
 	\usepackage{docmute}   % only needed to allow inclusion of proposal.tex
 	\usepackage{import} %import proposal from another folder
-	
+	\usepackage{pdfpages}
+
 	\raggedbottom                           % try to avoid widows and orphans
 	\sloppy
 	\clubpenalty1000%
@@ -99,9 +100,9 @@
 	\newpage
 	\section*{Acknowledgements}
 	
-	This document owes much to an earlier version written by Simon Moore
-	\cite{Moore95}.  His help, encouragement and advice was greatly 
-	appreciated.
+	I would like to thank KC Sivaramakrishnan for being an extremely helpful supervisor throughout the duration of the dissertation, as well as over the past three years.\\
+	I would also like to thank Anil Madhavapeddy for allowing me to use his laptop for the duration of the dissertation, and being a very supportive DoS.\\
+	Finally I'd like to thank my friends and family for supporting me through my final year.
 	
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	% now for the chapters
@@ -110,290 +111,66 @@
 	
 	\chapter{Introduction}
 	
-	\section{The History of the Blockchain}
+	The lecture suggests putting a paragraph here to explain the project, and how well it's been completed. Question - how is this different to what is on page 3?
+
+	\section{What is the Blockchain?}
 	
-	The blockchain, in its simplest form, is a series of blocks of data, where each block contains the cryptographic hash of the previous block in the chain. This means that the chain can exhibit arbitrary branching. \\
+	The blockchain, in its simplest form, is a series of blocks of data, where each block contains the cryptographic hash of the previous block in the chain. This means that the chain can exhibit arbitrary branching. Figure \ref{fig:mainblockchain} is a graphical representation of a typical blockchain data structure.\\
 	The significance of blocks containing hashes of previous blocks, is that if a change were to be made to a previous block, it would change the hashes of all subsequent blocks in the chain. This means that once a block is committed to the blockchain, it cannot be modified. \\
 	\\
+	\begin{figure}
+		\includegraphics[width=\linewidth]{figs/blockchain}
+		\caption{A typical blockchain structure}
+		\label{fig:mainblockchain}
+	\end{figure}
 	
-	\section{Building the document}
-	
-	This document was produced using \LaTeXe which is based upon
-	\LaTeX\cite{Lamport86}.  To build the document you first need to
-	generate \texttt{diss.aux} which, amongst other things, contains the
-	references used.  This if done by executing the command:
-	
-	\texttt{pdflatex diss}
-	
-	\noindent
-	Then the bibliography can be generated from \texttt{refs.bib} using:
-	
-	\texttt{bibtex diss}
-	
-	\noindent
-	Finally, to ensure all the page numbering is correct run \texttt{pdflatex}
-	on \texttt{diss.tex} until the \texttt{.aux} files do not change.  This
-	usually takes 2 more runs.
-	
-	\subsection{The makefile}
-	
-	To simplify the calls to \texttt{pdflatex} and \texttt{bibtex}, 
-	a makefile has been provided, see Appendix~\ref{makefile}. 
-	It provides the following facilities:
-	
-	\begin{description}
-	
-	\item\texttt{make} \\
-	 Display help information.
-	
-	\item\texttt{make proposal.pdf} \\
-	 Format the proposal document as a PDF.
-	
-	\item\texttt{make view-proposal} \\
-	 Run \texttt{make proposal.pdf} and then display it with a Linux PDF viewer
-	 (preferably ``okular'', if that is not available fall back to ``evince'').
-	
-	\item\texttt{make diss.pdf} \\
-	 Format the dissertation document as a PDF.
-	
-	\item\texttt{make count} \\
-	Display an estimate of the word count.
-	
-	\item\texttt{make all} \\
-	Construct \texttt{proposal.pdf} and \texttt{diss.pdf}.
-	
-	\item\texttt{make pub} \\ Make \texttt{diss.pdf}
-	and place it in my \texttt{public\_html} directory.
-	
-	\item\texttt{make clean} \\ Delete all intermediate files except the
-	source files and the resulting PDFs. All these deleted files can
-	be reconstructed by typing \texttt{make all}.
-	
-	\end{description}
-	
-	
-	\section{Counting words}
-	
-	An approximate word count of the body of the dissertation may be
-	obtained using:
-	
-	\texttt{wc diss.tex}
-	
-	\noindent
-	Alternatively, try something like:
-	
-	\verb/detex diss.tex | tr -cd '0-9A-Z a-z\n' | wc -w/
-	
-	
+	\section{The History of the Blockchain}
+	The blockchain, as a cryptographically secure chain of blocks, was first conceptualised by Stuart Haber and W. Scott Stornetta in 1990 \cite{HaberStornetta}.
+	However, until the creation of Git \cite{Git} in 2005, the blockchain was still a relatively niche concept.\\
+	Git uses the blockchain as a basis for storing a secure history of code in the form of commits made to branches.
+	We will explore the use of the Git as a blockchain during chapter ??? \\
+	\\
+	The invention of Bitcoin\cite{Bitcoin} in 2008 is seen by many as the most pivotal moment in the history of blockchain technologies.
+	Bitcoin combines the blockchain with a 'Proof of Work' consensus algorithm and the result of this is a decentralised, trust-less, peer to peer network which doesn't suffer from the double spending problem. \\
+	\\
+	\section{Blockchain Today}
+	At the time of writing, cryptocurrencies are generating a huge amount of excitement and cynicism in technology and economics communities. The value of Bitcoin is fluctuating on a day-by-day basis and many alternative currencies are gaining in popularity.\\
+	For example, Ethereum is a blockchain platform that allows participants to run arbitrary\footnote{Whilst there are restrictions to code run on the blockchain (e.g. it has to be deterministic), the Ethereum language is Turing complete.} code on the blockchain. This is known as Smart Contracts.
+
 	\chapter{Preparation}
-	
-	This chapter is empty!
-	
+	Things to mention:\\
+		Consensus algorithms:\\
+		Proof of work\\
+		Proof of stake\\
+		Paxos\\
+		Raft\\
+	Irmin and Ezirmin\\
+		Git as a blockchain\\
+			with hashing and branching and all\\
+			\\
+	Other blockchain architecture including mempools\\
+	\\
+	Requirements analysis
 	
 	\chapter{Implementation}
 	
-	\section{Verbatim text}
-	
-	Verbatim text can be included using \verb|\begin{verbatim}| and
-	\verb|\end{verbatim}|. I normally use a slightly smaller font and
-	often squeeze the lines a little closer together, as in:
-	
-	{\renewcommand{\baselinestretch}{0.8}\small
-	\begin{verbatim}
-	GET "libhdr"
-	 
-	GLOBAL { count:200; all  }
-	 
-	LET try(ld, row, rd) BE TEST row=all
-													THEN count := count + 1
-													ELSE { LET poss = all & ~(ld | row | rd)
-																 UNTIL poss=0 DO
-																 { LET p = poss & -poss
-																	 poss := poss - p
-																	 try(ld+p << 1, row+p, rd+p >> 1)
-																 }
-															 }
-	LET start() = VALOF
-	{ all := 1
-		FOR i = 1 TO 12 DO
-		{ count := 0
-			try(0, 0, 0)
-			writef("Number of solutions to %i2-queens is %i5*n", i, count)
-			all := 2*all + 1
-		}
-		RESULTIS 0
-	}
-	\end{verbatim}
-	}
-	
-	\section{Tables}
-	
-	\begin{samepage}
-	Here is a simple example\footnote{A footnote} of a table.
-	
-	\begin{center}
-	\begin{tabular}{l|c|r}
-	Left      & Centred & Right \\
-	Justified &         & Justified \\[3mm]
-	%\hline\\%[-2mm]
-	First     & A       & XXX \\
-	Second    & AA      & XX  \\
-	Last      & AAA     & X   \\
-	\end{tabular}
-	\end{center}
-	
-	\noindent
-	There is another example table in the proforma.
-	\end{samepage}
-	
-	\section{Simple diagrams}
-	
-	Simple diagrams can be written directly in \LaTeX.  For example, see
-	figure~\ref{latexpic1} on page~\pageref{latexpic1} and see
-	figure~\ref{latexpic2} on page~\pageref{latexpic2}.
-	
-	\begin{figure}
-	\setlength{\unitlength}{1mm}
-	\begin{center}
-	\begin{picture}(125,100)
-	\put(0,80){\framebox(50,10){AAA}}
-	\put(0,60){\framebox(50,10){BBB}}
-	\put(0,40){\framebox(50,10){CCC}}
-	\put(0,20){\framebox(50,10){DDD}}
-	\put(0,00){\framebox(50,10){EEE}}
-	
-	\put(75,80){\framebox(50,10){XXX}}
-	\put(75,60){\framebox(50,10){YYY}}
-	\put(75,40){\framebox(50,10){ZZZ}}
-	
-	\put(25,80){\vector(0,-1){10}}
-	\put(25,60){\vector(0,-1){10}}
-	\put(25,50){\vector(0,1){10}}
-	\put(25,40){\vector(0,-1){10}}
-	\put(25,20){\vector(0,-1){10}}
-	
-	\put(100,80){\vector(0,-1){10}}
-	\put(100,70){\vector(0,1){10}}
-	\put(100,60){\vector(0,-1){10}}
-	\put(100,50){\vector(0,1){10}}
-	
-	\put(50,65){\vector(1,0){25}}
-	\put(75,65){\vector(-1,0){25}}
-	\end{picture}
-	\end{center}
-	\caption{A picture composed of boxes and vectors.}
-	\label{latexpic1}
-	\end{figure}
-	
-	\begin{figure}
-	\setlength{\unitlength}{1mm}
-	\begin{center}
-	
-	\begin{picture}(100,70)
-	\put(47,65){\circle{10}}
-	\put(45,64){abc}
-	
-	\put(37,45){\circle{10}}
-	\put(37,51){\line(1,1){7}}
-	\put(35,44){def}
-	
-	\put(57,25){\circle{10}}
-	\put(57,31){\line(-1,3){9}}
-	\put(57,31){\line(-3,2){15}}
-	\put(55,24){ghi}
-	
-	\put(32,0){\framebox(10,10){A}}
-	\put(52,0){\framebox(10,10){B}}
-	\put(37,12){\line(0,1){26}}
-	\put(37,12){\line(2,1){15}}
-	\put(57,12){\line(0,2){6}}
-	\end{picture}
-	
-	\end{center}
-	\caption{A diagram composed of circles, lines and boxes.}
-	\label{latexpic2}
-	\end{figure}
-	
-	
-	
-	\section{Adding more complicated graphics}
-	
-	The use of \LaTeX\ format can be tedious and it is often better to use
-	encapsulated postscript (EPS) or PDF to represent complicated graphics.
-	Figure~\ref{epsfig} and~\ref{xfig} on page \pageref{xfig} are
-	examples. The second figure was drawn using \texttt{xfig} and exported in
-	{\tt.eps} format. This is my recommended way of drawing all diagrams.
-	
-	
-	\begin{figure}[tbh]
-	\centerline{\includegraphics{figs/cuarms.pdf}}
-	\caption{Example figure using encapsulated postscript}
-	\label{epsfig}
-	\end{figure}
-	
-	\begin{figure}[tbh]
-	\vspace{4in}
-	\caption{Example figure where a picture can be pasted in}
-	\label{pastedfig}
-	\end{figure}
-	
-	
-	\begin{figure}[tbh]
-	\centerline{\includegraphics{figs/diagram.pdf}}
-	\caption{Example diagram drawn using \texttt{xfig}}
-	\label{xfig}
-	\end{figure}
-	
-	
 	\chapter{Evaluation}
 	
-	\section{Printing and binding}
-	
-	Use a ``duplex'' laser printer that can print on both sides to print
-	two copies of your dissertation. Then bind them, for example using the
-	comb binder in the Computer Laboratory Library.
-	
-	\section{Further information}
-	
-	See the Unix Tools notes at
-	
-	\url{http://www.cl.cam.ac.uk/teaching/current-1/UnixTools/materials.html}
-	
-	
 	\chapter{Conclusion}
-	
-	I hope that this rough guide to writing a dissertation is \LaTeX\ has
-	been helpful and saved you time.
 	
 	
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	% the bibliography
-	\addcontentsline{toc}{chapter}{Bibliography}
+	\bibliographystyle{plain}
 	\bibliography{refs}
+	\addcontentsline{toc}{chapter}{Bibliography}
 	
 	%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 	% the appendices
 	\appendix
-	
-	\chapter{Latex source}
-	
-	\section{diss.tex}
-	{\scriptsize\verbatiminput{diss.tex}}
-	
-	\section{proposal.tex}
-	{\scriptsize\verbatiminput{proposal.tex}}
-	
-	\chapter{Makefile}
-	
-	\section{makefile}\label{makefile}
-	{\scriptsize\verbatiminput{makefile.txt}}
-	
-	\section{refs.bib}
-	{\scriptsize\verbatiminput{refs.bib}}
-	
-	
+
 	\chapter{Project Proposal}
 	
-	\subimport{../Proposal/}{Part_II_Project_Proposal_Draft}
+	\includepdf[pages=-]{Part_II_Project_Proposal_Draft.pdf}
 	
 	\end{document}
