@@ -2,6 +2,6 @@
 
 (executable
  ((name LogCreator)
-  (modules (LogCreator MemPoolReactor))
+  (modules (LogCreator LogTester LogStringCoder))
   (modes (native))
-  (libraries (lwt.unix ezirmin tc))))
+  (libraries (lwt.unix ezirmin tc lwt))))
