@@ -50,8 +50,7 @@
 	College:            & \bf Pembroke College                     \\
 	Project Title:      & \bf Building a Blockchain Library for OCaml \\
 	Examination:        & \bf Computer Science Tripos -- Part II, July 2018  \\
-	Word Count:         & \bf ????\footnotemark[1]
-												(well less than the 12000 limit)  \\
+	Word Count:         & \bf ????\footnotemark[1]\\
 	Project Originator: & KC Sivaramakrishnan                    \\
 	Supervisor:         & KC Sivaramakrishnan                    \\ 
 	\end{tabular}
@@ -135,23 +134,44 @@
 	\\
 	\section{Blockchain Today}
 	At the time of writing, cryptocurrencies are generating a huge amount of excitement and cynicism in technology and economics communities. The value of Bitcoin is fluctuating on a day-by-day basis and many alternative currencies are gaining in popularity.\\
-	For example, Ethereum is a blockchain platform that allows participants to run arbitrary\footnote{Whilst there are restrictions to code run on the blockchain (e.g. it has to be deterministic), the Ethereum language is Turing complete.} code on the blockchain. This is known as Smart Contracts.
+	For example, Ethereum is a blockchain platform that allows participants to run arbitrary\footnote{Whilst there are restrictions to code run on the blockchain (e.g. it has to be deterministic), the Ethereum language 'Solidity' is Turing complete.} code on the blockchain. These are known as Smart Contracts.
 
 	\chapter{Preparation}
-	Things to mention:\\
-		Consensus algorithms:\\
-		Proof of work\\
-		Proof of stake\\
-		Paxos\\
-		Raft\\
-	Irmin and Ezirmin\\
-		Git as a blockchain\\
-			with hashing and branching and all\\
+	\section{Starting Point}
+		The project will build upon functionality provided by Irmin [1] which is a distributed database system.  Irmin is fast,  durable and has the branching capabilities which are required to build a blockchain.\\
+		The project will also make use of Ezirmin\cite{Ezirmin} which provides a simplified API to Irmin.\\
+	\section{Using OCaml}
+		I had not used OCaml before so I had to learn it. Lwt and all
+	\section{Requirements Analysis}
+		In order to build a blockchain there were a few different technical parts of the project which I needed to research. 
+		Understanding these concepts was crucial because it allowed me to make informed decisions on how to build my project.
+		In this section, I have outlined some of the key technical concepts that I tackled when preparing to build my project.
+		\subsection{Git as a blockchain}
+			Git provides a data structure which can be interacted with via a command line API. However, it is not trivial why these data structure is classed as a blockchain. \\
 			\\
-	Other blockchain architecture including mempools\\
-	\\
-	Requirements analysis
-	
+			In order to convince oneself of this, it is worth considering what features are required for a data structure to be considered a blockchain. 
+			Whilst there is no universally agreed definition of a blockchain, it is commonly accepted that it will exhibit the following features:
+			\begin{enumerate}
+				\item Data is stored in blocks.
+				\item Blocks are ordered.
+				\item Each block contains a link to its parent block.
+			\end{enumerate}
+			Now we can consider the promises that Git makes and ensure that the above conditions are satisfied.\\
+			\begin{enumerate}
+				\item Git stores data as sequences of 'commits' which can be thought of as blocks.
+				\item Git history is stored as a tree structure with arbitrary branching. This imposes an order on commits or blocks.
+				\item Each Git commit contains the hash of the previous or parent commit.
+			\end{enumerate}
+		\subsection{Consensus Algorithms}
+			Typically, cryptocurrencies (which rely on blockchain technology) use a Proof of Work protocol to achieve consensus. 
+			There are, however, other ways of achieving consensus, and I evaluated a number of these in order to inform my approach to building consensus into my project. \\ 
+			\subsubsection*{Proof of work}
+			\subsubsection*{Proof of stake}
+			\subsubsection*{Paxos}
+			\subsubsection*{Raft}
+		\subsection{Mempools}
+			When making a transaction using Bitcoin or some other cryptocurrencies, a request for this transaction is placed in what is known as a Mempool\footnote{Mempool is short for Memory Pool}.
+			This Mempool can be thought of as a waiting room for transactions. When miners are assembling and mining blocks, this is where they will pick the transactions from.
 	\chapter{Implementation}
 	
 	\chapter{Evaluation}
