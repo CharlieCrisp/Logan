@@ -80,8 +80,7 @@
 	\section*{Declaration}
 	
 	I, Charlie Crisp of Pembroke College, being a candidate for Part II of the Computer
-	Science Tripos [or the Diploma in Computer Science], hereby declare
-	that this dissertation and the work described in it are my own work,
+	Science Tripos, hereby declare that this dissertation and the work described in it are my own work,
 	unaided except as may be specified below, and that the dissertation
 	does not contain material that has already been used to any substantial
 	extent for a comparable purpose.
@@ -139,7 +138,7 @@
 	\chapter{Preparation}
 	\section{Starting Point}
 		The project will build upon functionality provided by Irmin [1] which is a distributed database system.  Irmin is fast,  durable and has the branching capabilities which are required to build a blockchain.\\
-		The project will also make use of Ezirmin\cite{Ezirmin} which provides a simplified API to Irmin.\\
+		The project will also make use of Ezirmin \cite{Ezirmin} which provides a simplified API to Irmin.\\
 	\section{Using OCaml}
 		I had not used OCaml before so I had to learn it. Lwt and all
 	\section{Requirements Analysis}
@@ -166,6 +165,10 @@
 			Typically, cryptocurrencies (which rely on blockchain technology) use a Proof of Work protocol to achieve consensus. 
 			There are, however, other ways of achieving consensus, and I evaluated a number of these in order to inform my approach to building consensus into my project. \\ 
 			\subsubsection*{Proof of work}
+			The proof of work method for achieving consensus is actually very simple. 
+			Whenever a block is received by a participating node, the node will check that the block contains a proof of computational work done. 
+			In the field of cryptocurrencies, this proof takes the form of a random sequence of data which, when appended to the end of the block, causes its hash to be prefixed with a set number of 0s.
+			Because the data appended to the end of a block can only be found by a brute force method, which will require lots of computation/work.
 			\subsubsection*{Proof of stake}
 			\subsubsection*{Paxos}
 			\subsubsection*{Raft}
