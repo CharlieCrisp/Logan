@@ -8,6 +8,7 @@ PKG base64
 PKG bigarray
 PKG bin_prot
 PKG bin_prot.shape
+PKG biniou
 PKG bytes
 PKG cohttp
 PKG cohttp.lwt
@@ -16,6 +17,7 @@ PKG conduit
 PKG conduit.lwt
 PKG conduit.lwt-unix
 PKG cstruct
+PKG easy-format
 PKG ezirmin
 PKG ezjsonm
 PKG ezjsonm.lwt
@@ -66,5 +68,6 @@ PKG uri
 PKG uri.services
 PKG uutf
 PKG variantslib
+PKG yojson
 PKG zarith
 PKG zip
