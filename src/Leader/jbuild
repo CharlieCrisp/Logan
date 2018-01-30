@@ -4,4 +4,4 @@
  ((name LogCreator)
   (modules (LogCreator LogTester LogStringCoder))
   (modes (native))
-  (libraries (lwt.unix ezirmin tc lwt))))
+  (libraries (lwt.unix ezirmin tc lwt yojson))))
