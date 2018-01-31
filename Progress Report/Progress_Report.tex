@@ -1,9 +1,12 @@
-\title{Part II Project: Progress Report}
+\title{
+  \normalfont \normalsize
+  \textsc{Computer Science Tripos - Part II - Progress Report} \\ 
+  \\ 
+  \huge Building a Blockchain Library for OCaml
+}
 \author{
-        Charlie Crisp \\
-        Pembroke College\\
-        Computer Science Tripos\\
-        Project Title: Building a Blockchain Library for OCaml
+  Charlie Crisp, cc839@cam.ac.uk \\
+  Pembroke College\\
 }
 \date{\today}
 
@@ -12,22 +15,35 @@
 \begin{document}
 \maketitle
 
-\section{Introduction}
-This is time for all good men to come to the aid of their party!
+\noindent \textbf{Project Supervisor:} KC Sivaramakrishnan \\
+\\
+\textbf{Project Overseers:} Marcelo Fiore \& Timothy Jones\\
+\\
+\textbf{Directore of Studies:} Anil Madhavapeddy\\
 
-\paragraph{Outline}
-The remainder of this article is organized as follows.
-Section~\ref{previous work} gives account of previous work.
-Our new and exciting results are described in Section~\ref{results}.
-Finally, Section~\ref{conclusions} gives the conclusions.
-
-\section{Previous work}\label{previous work}
-A much longer \LaTeXe{} example was written by Gil~\cite{Gil:02}.
-
-\section{Results}\label{results}
-In this section we describe the results.
-
-\section{Conclusions}\label{conclusions}
-We worked hard, and achieved very little.
-
+\section{Work Completed}
+\subsection*{Using the Tools}
+Before starting this project, I had no experience using OCaml, Irmin\footnote{Irmin is a library which uses a Git backend to provide a immutable block store} or Lwt\footnote{Lwt is a library used to handle threading in OCaml}.
+I spent some time learning OCaml as a language and how to write idiomatic, thread-safe code. 
+I have also now become very familiar with Ezirmin which provides a simplified API to Irmin. \\
+This work was completed in the first half of Michaelmas, in accordance with my initial work schedule.
+\subsection*{Building a Distributed Ledger}
+My proposal suggested that I would have built the functionality for adding data to the blockchain by the end of Michaelmas. 
+Whilst I was one to two weeks behind with this work, it has now been built and is functioning.
+\subsection*{Consensus Protocol}
+In my project proposal, I declared that I would need to do some research on which consensus algorithm would be the most suitable for using in my project. 
+I suggested options including Proof of Work, Proof of Stake, Paxos and Raft.\\
+I have completed extensive research on these protocols and decided that I would like to combine the Proof of Work algorithm with a leader based approach such as the one employed by Raft. This will be done by using Proof of Work to periodically reallocate a leader in a group of nodes.\\
+There have been a few difficulties faced with using Ezirmin which have delayed progress on building consensus into the project. 
+I have also come to realise that this is by far the most substantial piece of work required for this project - more so than suggested in my proposal.\\
+I therefore running roughly 2-3 weeks behind with this work.
+\subsection*{Dissertation}
+Work on the written dissertation has been going well. 
+I have completed a first draft of an Introduction and Preparation section and am running roughly 2 weeks ahead of schedule with this.
+This should go some way to making up for the delay in building the consensus module.
+\section{Changes to the Original Proposal}
+There is still work to be done, as outlined in my original project proposal, however there are a couple of things which have changed slightly.\\
+In working with Ezirmin, I have discovered a bug that has set me back slightly. I am working with KC - my supervisor and the library's author - in order to work around this.\\
+I now believe that building of my evaluation program will not take as long as suggested in my propoasl (the first 6 weeks of lent).
+Whilst, I will be starting work on this after I suggested in my proposal, I believe that due to my greater proficiency with OCaml and scripting languages, it should only take around 3 weeks to complete.  
 \end{document}
