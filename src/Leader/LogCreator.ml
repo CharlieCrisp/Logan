@@ -1,6 +1,6 @@
 open Lwt.Infix
-module IrminLogBlock = Ezirmin.FS_log(Tc.String)
-module IrminLogMem = Ezirmin.FS_log(Tc.String)
+module IrminLogBlock = Ezirmin.Memory_log(Tc.String)
+module IrminLogMem = Ezirmin.Memory_log(Tc.String)
 
 let blockchainMasterBranch = Lwt_main.run (IrminLogBlock.init ~root: "/tmp/ezirminl/blockchain" ~bare:true () >>= IrminLogBlock.master)
 let memPoolMasterBranch = Lwt_main.run (IrminLogMem.init ~root: "/tmp/ezirminl/mempool" ~bare: true () >>= IrminLogMem.master)
