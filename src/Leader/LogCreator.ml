@@ -1,3 +1,4 @@
+(*TODO: why are we adding a value every second...?*)
 open Lwt.Infix
 module IrminLogBlock = Ezirmin.Memory_log(Tc.String)
 module IrminLogMem = Ezirmin.Memory_log(Tc.String)
@@ -10,18 +11,18 @@ let path = []
 
 (*TODO: remove wip branch after merge*)
 (*string -> unit Lwt.t*)
-let addValueToBlockchain value = let wipBranch = run @@ IrminLogBlock.clone_force blockchainMasterBranch "wip" in
-  IrminLogBlock.append ~message:"Entry added to the blockchain" wipBranch ~path:path value >>= function _ -> 
+let addValueToBlockchain value = IrminLogBlock.clone_force blockchainMasterBranch "wip" >>= fun wipBranch ->
+  IrminLogBlock.append ~message:"Entry added to the blockchain" wipBranch ~path:path value >>= fun _ -> 
   IrminLogBlock.merge wipBranch ~into:blockchainMasterBranch
 
 (*TODO: remove wip branch after merge*)
 (*string -> unit Lwt.t*)
-let addValueToMemPool value = let wipBranch = run @@ IrminLogMem.clone_force memPoolMasterBranch "wip" in
-  IrminLogMem.append ~message:"Entry added to the blockchain" wipBranch ~path:path value >>= function _ -> 
+let addValueToMemPool value = IrminLogMem.clone_force memPoolMasterBranch "wip" >>= fun wipBranch ->
+  IrminLogMem.append ~message:"Entry added to the blockchain" wipBranch ~path:path value >>= fun _ -> 
   IrminLogMem.merge wipBranch ~into:memPoolMasterBranch
 
 (*string list -> unit Lwt.t*)
-let addListToBlockchain list = Lwt.return @@ Lwt_list.iter_s addValueToBlockchain list
+let addListToBlockchain list = Lwt_list.iter_s addValueToBlockchain list
 
 (*unit -> string option Lwt.t*)
 let getLatestBlockchainMessage () = IrminLogBlock.get_cursor blockchainMasterBranch ~path:path >>= function
@@ -31,12 +32,12 @@ let getLatestBlockchainMessage () = IrminLogBlock.get_cursor blockchainMasterBra
     | None -> Lwt.return None
 
 (*?n:int -> string -> cursor -> int option Lwt.t*)
-let rec countWithCursor ?(n=1) (comparisonMessage:string) cursor = 
+let rec countWithCursor ?(n=0) (comparisonMessage:string) cursor = 
   (*read one more item and check if it's same as comparisonMessage*)
   (*string list * cursor option*)
   IrminLogMem.read cursor ~num_items:1 >>= function
-      | (comparisonMessage::_, _) -> Lwt.return (Some(n))
-      | (_, None) -> Lwt.return None
+      | (memPoolMessage::_, _) when memPoolMessage = comparisonMessage -> Lwt.return (Some(n))
+      | (_, None) -> Lwt.return (Some(n))
       | (_, Some(curs)) -> countWithCursor ~n:(n+1) comparisonMessage curs (*try the next one*)
 
 (*TODO: s there a way to use >>= (or similar) below, rather than let statements?*)
@@ -47,6 +48,7 @@ let countNewUpdates () =
   let cursor = run @@ IrminLogMem.get_cursor memPoolMasterBranch ~path:path in 
   match (latestMessage, cursor) with 
     |(Some(committedMessage), Some(initCursor)) -> countWithCursor committedMessage initCursor
+    |(None, Some(initCursor)) -> countWithCursor "NOT A MESSAGE" initCursor
     | _ -> Lwt.return None
 
 
@@ -59,23 +61,34 @@ let getNewUpdates () =
       | (list, _) -> Lwt.return @@ Some(list))
     | _ -> Lwt.return None
 
+let rec printList list = match list with 
+  | (x::xs) -> Lwt.return @@ Printf.printf "%s\n%!" x >>= fun _ -> printList xs
+  | [] -> Lwt.return ()
+
 (*unit -> 'a Lwt.t*)
 let rec runLeader () = getNewUpdates() >>= function 
-  | None -> 
-    let _ = run @@ Lwt_unix.sleep 1.0
-    in runLeader ()
-  | Some(updates) -> let _ = run @@ addListToBlockchain updates
-    in let _ = run @@ Lwt_unix.sleep 1.0
-    in runLeader ()
+  | None -> Lwt_unix.sleep 1.0 >>= fun _ ->
+    runLeader ()
+  | Some(updates) -> Lwt.return @@ Printf.printf "\n-----Start Block-----\n" >>= fun _ ->
+    IrminLogBlock.read_all blockchainMasterBranch [] >>= fun list ->
+    printList list >>= fun _ ->
+    Lwt.return @@ Printf.printf "\n-----Start MemPo-----\n" >>= fun _ ->
+    IrminLogMem.read_all memPoolMasterBranch [] >>= fun list ->
+    printList list >>= fun _ ->
+    Lwt.return @@ Printf.printf "------End MemPo------\n\n%!" >>= fun _ ->
+    addListToBlockchain updates >>= fun _ ->
+    Lwt_unix.sleep 1.0 >>= fun _ ->
+    runLeader ()
 
 (* unit -> 'a Lwt.t*)
-let startLeader () = addValueToBlockchain "New Leader" >>= function _ ->
-  addValueToMemPool "NewLeader" >>= function _ ->
-  Lwt.return @@ runLeader();;     
+let startLeader () = addValueToMemPool "New Leader" >>= fun _ ->
+  runLeader();;     
 
-Lwt_main.run @@ startLeader () ;;
+Lwt_main.run @@ startLeader () ;; 
 
 (*
+#use "Documents/CompSci/PartIIProject/src/Leader/LogCreator.ml";;
+
 Setup - get the ip of the leader and then ask for user to enter transactions
 Transactions can also be registering of items (maybe from a set registration id)
 
