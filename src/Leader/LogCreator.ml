@@ -62,30 +62,47 @@ let getNewUpdates () =
     | _ -> Lwt.return None
 
 let rec printList list = match list with 
-  | (x::xs) -> Lwt.return @@ Printf.printf "%s\n%!" x >>= fun _ -> printList xs
-  | [] -> Lwt.return ()
+  | (x::[]) -> Lwt.return @@ Printf.printf "| %s%!" x
+  | (x::xs) -> Lwt.return @@ Printf.printf "| %s\n%!" x >>= fun _ -> printList xs
+  | [] -> Lwt.return @@ Printf.printf "|"
+
+let printList () = Lwt.return @@ Printf.printf "\n-----Start Block-----\n" >>= fun _ ->
+  IrminLogBlock.read_all blockchainMasterBranch [] >>= fun list ->
+  printList list >>= fun _ ->
+  Lwt.return @@ Printf.printf "\n-----Start MemPo-----\n" >>= fun _ ->
+  IrminLogMem.read_all memPoolMasterBranch [] >>= fun list ->
+  printList list >>= fun _ ->
+  Lwt.return @@ Printf.printf "\n------End MemPo------\n\n%!"
 
 (*unit -> 'a Lwt.t*)
 let rec runLeader () = getNewUpdates() >>= function 
   | None -> Lwt_unix.sleep 1.0 >>= fun _ ->
-    runLeader ()
-  | Some(updates) -> Lwt.return @@ Printf.printf "\n-----Start Block-----\n" >>= fun _ ->
-    IrminLogBlock.read_all blockchainMasterBranch [] >>= fun list ->
-    printList list >>= fun _ ->
-    Lwt.return @@ Printf.printf "\n-----Start MemPo-----\n" >>= fun _ ->
-    IrminLogMem.read_all memPoolMasterBranch [] >>= fun list ->
-    printList list >>= fun _ ->
-    Lwt.return @@ Printf.printf "------End MemPo------\n\n%!" >>= fun _ ->
-    addListToBlockchain updates >>= fun _ ->
-    Lwt_unix.sleep 1.0 >>= fun _ ->
-    runLeader ()
+      runLeader ()
+  | Some([]) -> Lwt_unix.sleep 1.0 >>= fun _ ->
+      runLeader ()
+  | Some(updates) -> addListToBlockchain updates >>= fun _ ->
+      Lwt.return @@ Printf.printf "Found New Updates:\n%! " >>= fun _ ->
+      printList() >>= fun _ ->
+      Lwt_unix.sleep 1.0 >>= fun _ ->
+      runLeader ()
 
 (* unit -> 'a Lwt.t*)
 let startLeader () = addValueToMemPool "New Leader" >>= fun _ ->
   runLeader();;     
 
-Lwt_main.run @@ startLeader () ;; 
+Lwt_main.run @@ startLeader () ;;
+  
+(*
+The following code demonstrates how to start a leader, and on another thread, wait a few seconds and then add something to the mempool.
+let waitAndAdd () = Lwt_unix.sleep 3.0 >>= fun _ ->
+  addValueToMemPool "New Value!"
 
+let apply f = f()
+
+let tasks = [startLeader;waitAndAdd];;
+
+Lwt_main.run @@ Lwt_list.iter_p apply tasks;; 
+*)
 (*
 #use "Documents/CompSci/PartIIProject/src/Leader/LogCreator.ml";;
 
