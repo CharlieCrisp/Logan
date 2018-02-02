@@ -63,17 +63,17 @@ let getNewUpdates () =
     | _ -> Lwt.return None
 
 let rec printList list = match list with 
-  | (x::[]) -> Lwt.return @@ Printf.printf "| %s%!" x
-  | (x::xs) -> Lwt.return @@ Printf.printf "| %s\n%!" x >>= fun _ -> printList xs
-  | [] -> Lwt.return @@ Printf.printf "|"
+  | (x::[]) -> Lwt.return @@ Printf.printf "%s%!" x
+  | (x::xs) -> Lwt.return @@ Printf.printf "%s\n%!" x >>= fun _ -> printList xs
+  | [] -> Lwt.return @@ ()
 
-let printList () = Lwt.return @@ Printf.printf "\n-----Start Block-----\n" >>= fun _ ->
+let printList () = Lwt.return @@ Printf.printf "\n\027[92m-----Start Block-----\027[32m\n" >>= fun _ ->
   IrminLogBlock.read_all blockchainMasterBranch [] >>= fun list ->
   printList list >>= fun _ ->
-  Lwt.return @@ Printf.printf "\n-----Start MemPo-----\n" >>= fun _ ->
+  Lwt.return @@ Printf.printf "\n\027[93m-----Start MemPo-----\027[33m\n" >>= fun _ ->
   IrminLogMem.read_all memPoolMasterBranch [] >>= fun list ->
   printList list >>= fun _ ->
-  Lwt.return @@ Printf.printf "\n------End MemPo------\n\n%!"
+  Lwt.return @@ Printf.printf "\n\027[91m------End MemPo------\027[39m\n\n%!"
 
 (*unit -> 'a Lwt.t*)
 let rec runLeader () = getNewUpdates() >>= function 
@@ -82,7 +82,7 @@ let rec runLeader () = getNewUpdates() >>= function
   | Some([]) -> Lwt_unix.sleep 1.0 >>= fun _ ->
       runLeader ()
   | Some(updates) -> addListToBlockchain updates >>= fun _ ->
-      Lwt.return @@ Printf.printf "Found New Updates:\n%! " >>= fun _ ->
+      Lwt.return @@ Printf.printf "\027[95mFound New Updates:\027[39m\n%! " >>= fun _ ->
       printList() >>= fun _ ->
       Lwt_unix.sleep 1.0 >>= fun _ ->
       runLeader ()
