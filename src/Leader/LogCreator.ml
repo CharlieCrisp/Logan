@@ -1,4 +1,3 @@
-(*TODO: why are we adding a value every second...?*)
 open Lwt.Infix
 module IrminLogBlock = Ezirmin.FS_log(Tc.String)
 module IrminLogMem = Ezirmin.FS_log(Tc.String)
