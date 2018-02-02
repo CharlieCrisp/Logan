@@ -44,8 +44,8 @@ let rec countWithCursor ?(n=0) (comparisonMessage:string) cursor =
 (*Count how many new items there are in the memPool*)
 (*unit -> int option Lwt.t*)
 let countNewUpdates () = 
-  let latestMessage = run @@ getLatestBlockchainMessage() in
-  let cursor = run @@ IrminLogMem.get_cursor memPoolMasterBranch ~path:path in 
+  getLatestBlockchainMessage() >>= fun latestMessage ->
+  IrminLogMem.get_cursor memPoolMasterBranch ~path:path >>= fun cursor ->
   match (latestMessage, cursor) with 
     |(Some(committedMessage), Some(initCursor)) -> countWithCursor committedMessage initCursor
     |(None, Some(initCursor)) -> countWithCursor "NOT A MESSAGE" initCursor
@@ -54,8 +54,8 @@ let countNewUpdates () =
 
 (*unit -> string list option*)
 let getNewUpdates () = 
-  let cursor = run @@ IrminLogMem.get_cursor memPoolMasterBranch ~path:path in
-  let numberOfUpdates = run @@ countNewUpdates () in
+  IrminLogMem.get_cursor memPoolMasterBranch ~path:path >>= fun cursor ->
+  countNewUpdates () >>= fun numberOfUpdates ->
   match (cursor,numberOfUpdates) with
     | (Some(curs), Some(updates)) -> (IrminLogMem.read curs ~num_items:updates >>= function
       | (list, _) -> Lwt.return @@ Some(list))
