@@ -1,7 +1,7 @@
 (*TODO: why are we adding a value every second...?*)
 open Lwt.Infix
-module IrminLogBlock = Ezirmin.Memory_log(Tc.String)
-module IrminLogMem = Ezirmin.Memory_log(Tc.String)
+module IrminLogBlock = Ezirmin.FS_log(Tc.String)
+module IrminLogMem = Ezirmin.FS_log(Tc.String)
 
 let blockchainMasterBranch = Lwt_main.run (IrminLogBlock.init ~root: "/tmp/ezirminl/blockchain" ~bare:true () >>= IrminLogBlock.master)
 let memPoolMasterBranch = Lwt_main.run (IrminLogMem.init ~root: "/tmp/ezirminl/mempool" ~bare: true () >>= IrminLogMem.master)
@@ -94,8 +94,8 @@ let startLeader () = addTransactionToMemPool "New Leader" >>= fun _ ->
 
 Lwt_main.run @@ startLeader () ;;
   
-(*
-The following code demonstrates how to start a leader, and on another thread, wait a few seconds and then add something to the mempool.
+
+(* The following code demonstrates how to start a leader, and on another thread, wait a few seconds and then add something to the mempool.
 let waitAndAdd () = Lwt_unix.sleep 3.0 >>= fun _ ->
   addTransactionToMemPool "New Value!"
 
@@ -103,8 +103,8 @@ let apply f = f()
 
 let tasks = [startLeader;waitAndAdd];;
 
-Lwt_main.run @@ Lwt_list.iter_p apply tasks;; 
-*)
+Lwt_main.run @@ Lwt_list.iter_p apply tasks;;  *)
+
 (*
 #use "Documents/CompSci/PartIIProject/src/Leader/LogCreator.ml";;
 
