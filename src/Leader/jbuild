@@ -2,7 +2,7 @@
 
 (executable
  ((name LogCreator)
-  (modules (LogCreator LogTester))
+  (modules (LogCreator))
   (modes (native))
   (libraries (lwt.unix ezirmin tc lwt ezjsonm core_extended logstringcoder))))
 
