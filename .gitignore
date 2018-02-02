@@ -226,10 +226,9 @@ TSWLatexianTemp*
 *-tags.tex
 
 .vscode/
+*.merlin
 _build/
 .DS_Store
-src/.merlin
-test/.merlin
 configure
 setup.data
 setup.ml
