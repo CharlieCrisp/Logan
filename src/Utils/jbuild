@@ -1,0 +1,6 @@
+(jbuild_version 1)
+
+(library
+ ((name        LogStringCoder)
+  (public_name logstringcoder)
+  (libraries (ezjsonm core_extended))))
