@@ -1,8 +1,12 @@
 open Lwt.Infix
 module IrminLogMem = Ezirmin.FS_log(Tc.String)
 
-let memPoolMasterBranch = Lwt_main.run (IrminLogMem.init ~root: "/tmp/ezirminl/mempool" ~bare: true () >>= IrminLogMem.master)
 let run = Lwt_main.run
+
+(*For remote repos...*)
+let root = run (Lwt_io.write Lwt_io.stdout "\nPlease input the destination repo string: " >>= fun _ ->
+  Lwt_io.read_line Lwt_io.stdin)
+let memPoolMasterBranch = Lwt_main.run (IrminLogMem.init ~root:root ~bare: true () >>= IrminLogMem.master)
 let path = []
 
 let addTransactionToMemPool senderID receiverID bookID =
