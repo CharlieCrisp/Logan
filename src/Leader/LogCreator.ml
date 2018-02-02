@@ -17,8 +17,10 @@ let addValueToBlockchain value = IrminLogBlock.clone_force blockchainMasterBranc
 
 (*TODO: remove wip branch after merge*)
 (*string -> unit Lwt.t*)
-let addValueToMemPool value = IrminLogMem.clone_force memPoolMasterBranch "wip" >>= fun wipBranch ->
-  IrminLogMem.append ~message:"Entry added to the blockchain" wipBranch ~path:path value >>= fun _ -> 
+let addTransactionToMemPool value =
+  let message = LogStringCoder.encodeString "some id" "another id" value in 
+  IrminLogMem.clone_force memPoolMasterBranch "wip" >>= fun wipBranch ->
+  IrminLogMem.append ~message:"Entry added to the blockchain" wipBranch ~path:path message >>= fun _ -> 
   IrminLogMem.merge wipBranch ~into:memPoolMasterBranch
 
 (*string list -> unit Lwt.t*)
@@ -87,7 +89,7 @@ let rec runLeader () = getNewUpdates() >>= function
       runLeader ()
 
 (* unit -> 'a Lwt.t*)
-let startLeader () = addValueToMemPool "New Leader" >>= fun _ ->
+let startLeader () = addTransactionToMemPool "New Leader" >>= fun _ ->
   runLeader();;     
 
 Lwt_main.run @@ startLeader () ;;
@@ -95,7 +97,7 @@ Lwt_main.run @@ startLeader () ;;
 (*
 The following code demonstrates how to start a leader, and on another thread, wait a few seconds and then add something to the mempool.
 let waitAndAdd () = Lwt_unix.sleep 3.0 >>= fun _ ->
-  addValueToMemPool "New Value!"
+  addTransactionToMemPool "New Value!"
 
 let apply f = f()
 
