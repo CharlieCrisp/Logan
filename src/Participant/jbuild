@@ -1,0 +1,7 @@
+(jbuild_version 1)
+
+(executable
+ ((name ParticipantRunner)
+  (modules (ParticipantRunner))
+  (modes (native))
+  (libraries (lwt.unix ezirmin tc lwt ezjsonm core_extended logstringcoder))))
