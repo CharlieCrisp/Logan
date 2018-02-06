@@ -109,9 +109,9 @@
 	
 	\chapter{Introduction}
 	
-	The lecture suggests putting a paragraph here to explain the project, and how well it's been completed. Question - how is this different to what is on page 3?
+	%TODO: Put a description of the project in general. Talk about it being a blockchain library, separate from crypto and using a modified verion of consensus protocols.
 
-	\section{What is the Blockchain?}
+	\section{The Blockchain}
 	
 	The blockchain, in its simplest form, is a series of blocks of data, where each block contains the cryptographic hash of the previous block in the chain. This means that the chain can exhibit arbitrary branching. Figure \ref{fig:mainblockchain} is a graphical representation of a typical blockchain data structure.\\
 	The significance of blocks containing hashes of previous blocks, is that if a change were to be made to a previous block, it would change the hashes of all subsequent blocks in the chain. This means that once a block is committed to the blockchain, it cannot be modified. \\
@@ -161,20 +161,45 @@
 				\item Git history is stored as a tree structure with arbitrary branching. This imposes an order on commits or blocks.
 				\item Each Git commit contains the hash of the previous or parent commit.
 			\end{enumerate}
-		\subsection{Consensus Algorithms}
-			Typically, cryptocurrencies (which rely on blockchain technology) use a Proof of Work protocol to achieve consensus. 
-			There are, however, other ways of achieving consensus, and I evaluated a number of these in order to inform my approach to building consensus into my project. \\ 
-			\subsubsection*{Proof of work}
+
+	\section{Mempools}
+	When making a transaction using Bitcoin or some other cryptocurrencies, a request for this transaction is placed in what is known as a Mempool\footnote{Mempool is short for Memory Pool}.
+	This Mempool can be thought of as a waiting room for transactions. When miners are assembling and mining blocks, this is where they will pick the transactions from.
+	
+	\section{Consensus Algorithms}
+	%TODO: Explain how this was an important part of work.
+	%TODO: Explain what are the problems with all of these consensus algorithms and why would they not work in my case.
+	%TODO: Explain what the algorithm that I developed is and why it solves these problems
+	Typically, cryptocurrencies (which rely on blockchain technology) use a Proof of Work protocol to achieve consensus. 
+	There are, however, other ways of achieving consensus, and I evaluated a number of these in order to inform my approach to building consensus into my project. \\ 
+		\subsection*{Existing Algorithms}
+			\subsubsection*{Proof of Work}
+			%TODO: This is good for solving double spending
+			%TODO: How does it work in Bitcoin
+			%TODO: Use a diagram, mention nonces, yada yada yada
 			The proof of work method for achieving consensus is actually very simple. 
 			Whenever a block is received by a participating node, the node will check that the block contains a proof of computational work done. 
 			In the field of cryptocurrencies, this proof takes the form of a random sequence of data which, when appended to the end of the block, causes its hash to be prefixed with a set number of 0s.
 			Because the data appended to the end of a block can only be found by a brute force method, which will require lots of computation/work.
-			\subsubsection*{Proof of stake}
+			\subsubsection*{Proof of Stake}
+			%TODO: Flesh this out with small amount of detail
+			%TODO: Not good for this projects as you need the concept of Stake
 			\subsubsection*{Paxos}
+			%TODO: Finish
 			\subsubsection*{Raft}
-		\subsection{Mempools}
-			When making a transaction using Bitcoin or some other cryptocurrencies, a request for this transaction is placed in what is known as a Mempool\footnote{Mempool is short for Memory Pool}.
-			This Mempool can be thought of as a waiting room for transactions. When miners are assembling and mining blocks, this is where they will pick the transactions from.
+			%TODO: Finish description of Raft and it's concept of terms.
+		\subsection*{A New Approach}
+		%TODO: Overview of my approach to consensus
+			\subsection*{Pros and Cons of a Leader Based Approach}
+			%TODO: Why is this beneficial? It loosens the trust that comes with a leader based approach.
+			%TODO: Might also increase overhead?
+			%TODO: Can we do it in a low cost way?
+			\subsection*{Writing to the blockchain}
+			%TODO: Describe how a participant writes into a mempool that the leader then copies. Participants can then pull from it. 
+			\subsection{How to deal with failure}
+			%TODO: If it's a participant then fine. Even if leader changes, that will still be part of the old leaders blockchain.
+			%TODO: If it's a leader, then other participants start a leader election.
+
 	\chapter{Implementation}
 	
 	\chapter{Evaluation}
