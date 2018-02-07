@@ -11,7 +11,10 @@ let root = "/tmp/ezirminl/mempool"
 let mem_pool_master_branch = Lwt_main.run (IrminLogMem.init ~root:root ~bare: true () >>= IrminLogMem.master)
 let path = []
 
-let get_is_remote () = write "\n\027[93mIs your destination log local or remote (l/r): \027[39m" >>= fun _ ->
+let get_id () = write "\n\027[93mWhat is your current ID: \027[39m" >>= fun _ ->
+  read()
+
+let get_is_remote () = write "\027[93mIs your destination log local or remote (l/r): \027[39m" >>= fun _ ->
   read () >>= function
     | "r" -> Lwt.return true
     | _ -> Lwt.return false
@@ -25,7 +28,8 @@ let try_get_remote_repo is_remote = match is_remote with
       Lwt.return @@ Some(remote)
     | _ -> Lwt.return None
 
-(*For remote repos...*)
+
+let current_id = run @@ get_id()
 let is_remote = run @@ get_is_remote()
 let opt_remote = run @@ try_get_remote_repo is_remote
 exception Remote_Not_Found
@@ -51,13 +55,11 @@ let add_transaction_to_mempool sender_id receiver_id book_id =
       | None -> raise Remote_Not_Found)
 
 let get_log_entry_tuple () = 
-  write "\n\027[39mYour ID (sender): \027[39m" >>= fun _ ->
-  read() >>= fun sender_id ->
-  write "\027[39mTheir ID (receiver): \027[39m" >>= fun _ ->
+  write "\n\027[39mTheir ID (receiver): \027[39m" >>= fun _ ->
   read() >>= fun receiver_id ->
   write "\027[39mItem ID (book): \027[39m" >>= fun _ ->
   read() >>= fun book_id ->
-  Lwt.return (sender_id, receiver_id, book_id)
+  Lwt.return (current_id, receiver_id, book_id)
 
 let rec start_participant () = 
   write "\027[35m-----------------------------------\n-----Enter Transaction Details-----\027[39m" >>= fun _ ->
