@@ -2,105 +2,105 @@ open Lwt.Infix
 module IrminLogBlock = Ezirmin.FS_log(Tc.String)
 module IrminLogMem = Ezirmin.FS_log(Tc.String)
 
-let blockchainMasterBranch = Lwt_main.run (IrminLogBlock.init ~root: "/tmp/ezirminl/blockchain" ~bare:true () >>= IrminLogBlock.master)
-let memPoolMasterBranch = Lwt_main.run (IrminLogMem.init ~root: "/tmp/ezirminl/mempool" ~bare: true () >>= IrminLogMem.master)
+let blockchain_master_branch = Lwt_main.run (IrminLogBlock.init ~root: "/tmp/ezirminl/blockchain" ~bare:true () >>= IrminLogBlock.master)
+let mempool_master_branch = Lwt_main.run (IrminLogMem.init ~root: "/tmp/ezirminl/mempool" ~bare: true () >>= IrminLogMem.master)
 
 let run = Lwt_main.run
 let path = []
 
 (*TODO: remove wip branch after merge*)
 (*string -> unit Lwt.t*)
-let addValueToBlockchain value = IrminLogBlock.clone_force blockchainMasterBranch "wip" >>= fun wipBranch ->
-  IrminLogBlock.append ~message:"Entry added to the blockchain" wipBranch ~path:path value >>= fun _ -> 
-  IrminLogBlock.merge wipBranch ~into:blockchainMasterBranch
+let add_value_to_blockchain value = IrminLogBlock.clone_force blockchain_master_branch "wip" >>= fun wip_branch ->
+  IrminLogBlock.append ~message:"Entry added to the blockchain" wip_branch ~path:path value >>= fun _ -> 
+  IrminLogBlock.merge wip_branch ~into:blockchain_master_branch
 
 (*TODO: remove wip branch after merge*)
 (*string -> unit Lwt.t*)
-let addTransactionToMemPool value =
-  let message = LogStringCoder.encodeString "some id" "another id" value in 
-  IrminLogMem.clone_force memPoolMasterBranch "wip" >>= fun wipBranch ->
-  IrminLogMem.append ~message:"Entry added to the blockchain" wipBranch ~path:path message >>= fun _ -> 
-  IrminLogMem.merge wipBranch ~into:memPoolMasterBranch
+let add_transaction_to_mempool value =
+  let message = LogStringCoder.encode_string "some id" "another id" value in 
+  IrminLogMem.clone_force mempool_master_branch "wip" >>= fun wip_branch ->
+  IrminLogMem.append ~message:"Entry added to the blockchain" wip_branch ~path:path message >>= fun _ -> 
+  IrminLogMem.merge wip_branch ~into:mempool_master_branch
 
 (*string list -> unit Lwt.t*)
-let addListToBlockchain list = Lwt_list.iter_s addValueToBlockchain list
+let add_list_to_blockchain list = Lwt_list.iter_s add_value_to_blockchain list
 
 (*unit -> string option Lwt.t*)
-let getLatestBlockchainMessage () = IrminLogBlock.get_cursor blockchainMasterBranch ~path:path >>= function
+let get_latest_blockchain_message () = IrminLogBlock.get_cursor blockchain_master_branch ~path:path >>= function
     | Some(cursor) -> IrminLogBlock.read cursor ~num_items:1 >>= (function
       | (x::_, _) -> Lwt.return @@ Some(x)
       | _ -> Lwt.return None)
     | None -> Lwt.return None
 
 (*?n:int -> string -> cursor -> int option Lwt.t*)
-let rec countWithCursor ?(n=0) (comparisonMessage:string) cursor = 
-  (*read one more item and check if it's same as comparisonMessage*)
+let rec count_with_cursor ?(n=0) (comparison_message:string) cursor = 
+  (*read one more item and check if it's same as comparison_message*)
   (*string list * cursor option*)
   IrminLogMem.read cursor ~num_items:1 >>= function
-      | (memPoolMessage::_, _) when memPoolMessage = comparisonMessage -> Lwt.return (Some(n))
+      | (mempool_message::_, _) when mempool_message = comparison_message -> Lwt.return (Some(n))
       | (_, None) -> Lwt.return (Some(n))
-      | (_, Some(curs)) -> countWithCursor ~n:(n+1) comparisonMessage curs (*try the next one*)
+      | (_, Some(curs)) -> count_with_cursor ~n:(n+1) comparison_message curs (*try the next one*)
 
 (*TODO: s there a way to use >>= (or similar) below, rather than let statements?*)
 (*Count how many new items there are in the memPool*)
 (*unit -> int option Lwt.t*)
-let countNewUpdates () = 
-  getLatestBlockchainMessage() >>= fun latestMessage ->
-  IrminLogMem.get_cursor memPoolMasterBranch ~path:path >>= fun cursor ->
-  match (latestMessage, cursor) with 
-    |(Some(committedMessage), Some(initCursor)) -> countWithCursor committedMessage initCursor
-    |(None, Some(initCursor)) -> countWithCursor "NOT A MESSAGE" initCursor
+let count_new_updates () = 
+  get_latest_blockchain_message() >>= fun latest_message ->
+  IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun cursor ->
+  match (latest_message, cursor) with 
+    |(Some(committed_message), Some(initial_cursor)) -> count_with_cursor committed_message initial_cursor
+    |(None, Some(initial_cursor)) -> count_with_cursor "NOT A MESSAGE" initial_cursor
     | _ -> Lwt.return None
 
 
 (*unit -> string list option*)
-let getNewUpdates () = 
-  IrminLogMem.get_cursor memPoolMasterBranch ~path:path >>= fun cursor ->
-  countNewUpdates () >>= fun numberOfUpdates ->
-  match (cursor,numberOfUpdates) with
+let get_new_updates () = 
+  IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun cursor ->
+  count_new_updates () >>= fun number_of_updates ->
+  match (cursor,number_of_updates) with
     | (Some(curs), Some(updates)) -> (IrminLogMem.read curs ~num_items:updates >>= function
       | (list, _) -> Lwt.return @@ Some(list))
     | _ -> Lwt.return None
 
-let rec printList list = match list with 
+let rec print_list list = match list with 
   | (x::[]) -> Lwt.return @@ Printf.printf "%s%!" x
-  | (x::xs) -> Lwt.return @@ Printf.printf "%s\n%!" x >>= fun _ -> printList xs
+  | (x::xs) -> Lwt.return @@ Printf.printf "%s\n%!" x >>= fun _ -> print_list xs
   | [] -> Lwt.return @@ ()
 
-let printList () = Lwt.return @@ Printf.printf "\n\027[92m-----Start Block-----\027[32m\n" >>= fun _ ->
-  IrminLogBlock.read_all blockchainMasterBranch [] >>= fun list ->
-  printList list >>= fun _ ->
+let print_list () = Lwt.return @@ Printf.printf "\n\027[92m-----Start Block-----\027[32m\n" >>= fun _ ->
+  IrminLogBlock.read_all blockchain_master_branch [] >>= fun list ->
+  print_list list >>= fun _ ->
   Lwt.return @@ Printf.printf "\n\027[93m-----Start MemPo-----\027[33m\n" >>= fun _ ->
-  IrminLogMem.read_all memPoolMasterBranch [] >>= fun list ->
-  printList list >>= fun _ ->
+  IrminLogMem.read_all mempool_master_branch [] >>= fun list ->
+  print_list list >>= fun _ ->
   Lwt.return @@ Printf.printf "\n\027[91m------End MemPo------\027[39m\n\n%!"
 
 (*unit -> 'a Lwt.t*)
-let rec runLeader () = getNewUpdates() >>= function 
+let rec run_leader () = get_new_updates() >>= function 
   | None -> Lwt_unix.sleep 1.0 >>= fun _ ->
-      runLeader ()
+      run_leader ()
   | Some([]) -> Lwt_unix.sleep 1.0 >>= fun _ ->
-      runLeader ()
-  | Some(updates) -> addListToBlockchain updates >>= fun _ ->
+      run_leader ()
+  | Some(updates) -> add_list_to_blockchain updates >>= fun _ ->
       Lwt.return @@ Printf.printf "\027[95mFound New Updates:\027[39m\n%! " >>= fun _ ->
-      printList() >>= fun _ ->
+      print_list() >>= fun _ ->
       Lwt_unix.sleep 1.0 >>= fun _ ->
-      runLeader ()
+      run_leader ()
 
 (* unit -> 'a Lwt.t*)
-let startLeader () = addTransactionToMemPool "New Leader" >>= fun _ ->
-  runLeader();;     
+let start_leader () = add_transaction_to_mempool "New Leader" >>= fun _ ->
+  run_leader();;     
 
-Lwt_main.run @@ startLeader () ;;
+Lwt_main.run @@ start_leader () ;;
   
 
 (* The following code demonstrates how to start a leader, and on another thread, wait a few seconds and then add something to the mempool.
 let waitAndAdd () = Lwt_unix.sleep 3.0 >>= fun _ ->
-  addTransactionToMemPool "New Value!"
+  add_transaction_to_mempool "New Value!"
 
 let apply f = f()
 
-let tasks = [startLeader;waitAndAdd];;
+let tasks = [start_leader;waitAndAdd];;
 
 Lwt_main.run @@ Lwt_list.iter_p apply tasks;;  *)
 

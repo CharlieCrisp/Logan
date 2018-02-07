@@ -8,15 +8,15 @@ let push = IrminLogMem.Sync.push;;
 let pull = IrminLogMem.Sync.pull;;
 
 let root = "/tmp/ezirminl/mempool"
-let memPoolMasterBranch = Lwt_main.run (IrminLogMem.init ~root:root ~bare: true () >>= IrminLogMem.master)
+let mem_pool_master_branch = Lwt_main.run (IrminLogMem.init ~root:root ~bare: true () >>= IrminLogMem.master)
 let path = []
 
-let getIsRemote () = write "\n\027[93mIs your destination log local or remote (l/r): \027[39m" >>= fun _ ->
+let get_is_remote () = write "\n\027[93mIs your destination log local or remote (l/r): \027[39m" >>= fun _ ->
   read () >>= function
     | "r" -> Lwt.return true
     | _ -> Lwt.return false
 
-let tryGetRemoteRepo isRemote = match isRemote with
+let try_get_remote_repo is_remote = match is_remote with
     | true -> write "Destination Username: " >>= fun _ ->
       read() >>= fun user ->
       write "Destination Hostname: " >>= fun _ ->
@@ -26,44 +26,44 @@ let tryGetRemoteRepo isRemote = match isRemote with
     | _ -> Lwt.return None
 
 (*For remote repos...*)
-let isRemote = run @@ getIsRemote()
-let optRemote = run @@ tryGetRemoteRepo isRemote
+let is_remote = run @@ get_is_remote()
+let opt_remote = run @@ try_get_remote_repo is_remote
 exception Remote_Not_Found
 exception Could_Not_Pull_From_Remote
 exception Could_Not_Push_To_Remote
 
-let addLocalMessageToMemPool message =
-  IrminLogMem.clone_force memPoolMasterBranch "wip" >>= fun wipBranch ->
-  IrminLogMem.append ~message:"Entry added to the blockchain" wipBranch ~path:path message >>= fun _ -> 
-  IrminLogMem.merge wipBranch ~into:memPoolMasterBranch ;;
+let add_local_message_to_mempool message =
+  IrminLogMem.clone_force mem_pool_master_branch "wip" >>= fun wip_branch ->
+  IrminLogMem.append ~message:"Entry added to the blockchain" wip_branch ~path:path message >>= fun _ -> 
+  IrminLogMem.merge wip_branch ~into:mem_pool_master_branch ;;
 
-let addTransactionToMemPool senderID receiverID bookID =
-  let message = LogStringCoder.encodeString senderID receiverID bookID in 
-  match isRemote with
-    | false -> addLocalMessageToMemPool message
-    | true -> (match optRemote with 
-      | Some(remote) -> pull remote memPoolMasterBranch `Merge >>= (function
-        | `Ok -> addLocalMessageToMemPool message >>= fun _ ->
-          push remote memPoolMasterBranch >>= (function
+let add_transaction_to_mempool sender_id receiver_id book_id =
+  let message = LogStringCoder.encode_string sender_id receiver_id book_id in 
+  match is_remote with
+    | false -> add_local_message_to_mempool message
+    | true -> (match opt_remote with 
+      | Some(remote) -> pull remote mem_pool_master_branch `Merge >>= (function
+        | `Ok -> add_local_message_to_mempool message >>= fun _ ->
+          push remote mem_pool_master_branch >>= (function
             | `Ok -> Lwt.return ()
             | _ -> raise Could_Not_Push_To_Remote)
         | _ -> raise Could_Not_Pull_From_Remote)
       | None -> raise Remote_Not_Found)
 
-let getLogEntryTuple () = 
+let get_log_entry_tuple () = 
   write "\n\027[39mYour ID (sender): \027[39m" >>= fun _ ->
-  read() >>= fun senderID ->
+  read() >>= fun sender_id ->
   write "\027[39mTheir ID (receiver): \027[39m" >>= fun _ ->
-  read() >>= fun receiverID ->
+  read() >>= fun receiver_id ->
   write "\027[39mItem ID (book): \027[39m" >>= fun _ ->
-  read() >>= fun bookID ->
-  Lwt.return (senderID, receiverID, bookID)
+  read() >>= fun book_id ->
+  Lwt.return (sender_id, receiver_id, book_id)
 
-let rec startParticipant () = 
+let rec start_participant () = 
   write "\027[35m-----------------------------------\n-----Enter Transaction Details-----\027[39m" >>= fun _ ->
-  getLogEntryTuple() >>= fun (sender, receiver, book) ->
-  addTransactionToMemPool sender receiver book >>= fun _ ->
+  get_log_entry_tuple() >>= fun (sender, receiver, book) ->
+  add_transaction_to_mempool sender receiver book >>= fun _ ->
   write "\n\027[32mITEM ADDED SUCCESSFULLY\n" >>= 
-  startParticipant;;
+  start_participant;;
 
-run @@ startParticipant();;
+run @@ start_participant();;

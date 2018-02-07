@@ -1,20 +1,20 @@
 open Core_extended.Std;;
 
-type logItem = 
+type log_item = 
     { time: Time.t;
-      senderID: string;
-      receiverID: string;
-      bookID: string }
+      sender_id: string;
+      receiver_id: string;
+      book_id: string }
 
-let buildJSON senderID receiverID bookID = 
+let build_json sender_id receiver_id book_id = 
   let str = Ezjsonm.string in 
   let now = Time.to_string (Time.now()) in 
   let time = ("Time", str now) in
-  let send = ("SenderID", str senderID) in 
-  let receiver = ("ReceiverID", str receiverID) in
-  let book = ("BookID", str bookID) in
+  let send = ("sender_id", str sender_id) in 
+  let receiver = ("receiver_id", str receiver_id) in
+  let book = ("book_id", str book_id) in
   Ezjsonm.dict [time;send;receiver;book]
 
-let encodeString senderID receiverID bookID = 
-  let json = buildJSON senderID receiverID bookID
+let encode_string sender_id receiver_id book_id = 
+  let json = build_json sender_id receiver_id book_id
   in Ezjsonm.to_string json
