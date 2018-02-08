@@ -8,7 +8,7 @@ let push = IrminLogMem.Sync.push;;
 let pull = IrminLogMem.Sync.pull;;
 
 let root = "/tmp/ezirminl/mempool"
-let mem_pool_master_branch = Lwt_main.run (IrminLogMem.init ~root:root ~bare: true () >>= IrminLogMem.master)
+let mempool_master_branch = Lwt_main.run (IrminLogMem.init ~root:root ~bare:true () >>= IrminLogMem.master)
 let path = []
 
 let get_id () = write "\n\027[93mWhat is your current ID: \027[39m" >>= fun _ ->
@@ -37,18 +37,18 @@ exception Could_Not_Pull_From_Remote
 exception Could_Not_Push_To_Remote
 
 let add_local_message_to_mempool message =
-  IrminLogMem.clone_force mem_pool_master_branch "wip" >>= fun wip_branch ->
+  IrminLogMem.clone_force mempool_master_branch "wip" >>= fun wip_branch ->
   IrminLogMem.append ~message:"Entry added to the blockchain" wip_branch ~path:path message >>= fun _ -> 
-  IrminLogMem.merge wip_branch ~into:mem_pool_master_branch ;;
+  IrminLogMem.merge wip_branch ~into:mempool_master_branch ;;
 
 let add_transaction_to_mempool sender_id receiver_id book_id =
   let message = LogStringCoder.encode_string sender_id receiver_id book_id in 
   match is_remote with
     | false -> add_local_message_to_mempool message
     | true -> (match opt_remote with 
-      | Some(remote) -> pull remote mem_pool_master_branch `Merge >>= (function
+      | Some(remote) -> pull remote mempool_master_branch `Update >>= (function
         | `Ok -> add_local_message_to_mempool message >>= fun _ ->
-          push remote mem_pool_master_branch >>= (function
+          push remote mempool_master_branch >>= (function
             | `Ok -> Lwt.return ()
             | _ -> raise Could_Not_Push_To_Remote)
         | _ -> raise Could_Not_Pull_From_Remote)
