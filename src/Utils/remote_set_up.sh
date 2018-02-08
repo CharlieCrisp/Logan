@@ -13,6 +13,10 @@ opam init
 opam install ${OPAM_DEPENDS}
 eval `opam config env`
 
+if [ ! -f ~/.bash_profile ]; then
+    echo "eval `opam config env`" > ~/.bash_profile
+fi
+
 cd src/
 git clone https://github.com/kayceesrk/ezirmin.git
 cd ezirmin
