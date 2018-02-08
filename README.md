@@ -4,6 +4,8 @@
 Cambridge CST Part II Project - Building a Blockchain Library for OCaml
 
 This project creates a blockchain using Irmin and a leader-based consensus protocol. 
+
+## Building the project
 To build the project, navigate to the root of the repository and type...
 ```bash
 make
@@ -15,4 +17,16 @@ make lead
 ...and to run a participant type...
 ```bash
 make part
+```
+
+## Setup scripts
+There are a couple of scripts to help with setting up machines.
+To set up a remote machine, type...
+```bash
+bash src/Utils/remote_setup.sh
+```
+
+To sync a participants mempool with the leader's, before running a participant, type...
+```bash
+bash src/Utils/sync_git.sh
 ```
