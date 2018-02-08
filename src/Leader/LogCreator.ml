@@ -3,7 +3,7 @@ module IrminLogBlock = Ezirmin.FS_log(Tc.String)
 module IrminLogMem = Ezirmin.FS_log(Tc.String)
 
 let blockchain_master_branch = Lwt_main.run (IrminLogBlock.init ~root: "/tmp/ezirminl/blockchain" ~bare:true () >>= IrminLogBlock.master)
-let mempool_master_branch = Lwt_main.run (IrminLogMem.init ~root: "/tmp/ezirminl/mempool" ~bare: true () >>= IrminLogMem.master)
+let mempool_master_branch = Lwt_main.run (IrminLogMem.init ~root: "/tmp/ezirminl/mempool" ~bare:true () >>= IrminLogMem.master)
 
 let run = Lwt_main.run
 let path = []
