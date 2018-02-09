@@ -7,6 +7,7 @@
 	\usepackage{import} %import proposal from another folder
 	\usepackage{pdfpages}
 	\usepackage{listings}
+	\usepackage{upquote}
 
 	\raggedbottom                           % try to avoid widows and orphans
 	\sloppy
@@ -138,10 +139,61 @@
 
 	\chapter{Preparation}
 	\section{Starting Point}
-		The project will build upon functionality provided by Irmin [1] which is a distributed database system.  Irmin is fast,  durable and has the branching capabilities which are required to build a blockchain.\\
-		The project will also make use of Ezirmin \cite{Ezirmin} which provides a simplified API to Irmin.\\
+		The project built upon functionality provided by Irmin [1] which is a distributed database system.  Irmin is fast, durable and has the branching capabilities which are required to build a blockchain.\\
+		The project also made use of Ezirmin \cite{Ezirmin} which provides a simplified API to Irmin.\\
 	\section{Using OCaml}
-		I had not used OCaml before so I had to learn it. Lwt and all
+		At the start of the project, I had never used OCaml for any project of significance. 
+		Whilst the first year Foundations of Computer Science course had given me some background into functional programming, there were still many key OCaml features which I had to learn.
+		In the first few weeks of my project, I spent time studying the book Real World OCaml \cite{RealWorldOCaml} which proved a great introduction to many of OCaml's features.  
+		\subsection*{Pattern Matching}
+		OCaml provides a very powerful syntax for matching patterns which allow you to write functions like the following\ldots 
+		\begin{lstlisting}[language=Caml,showstringspaces=false] 
+  type card = Card of string * int
+  let pattern_matcher_1 input = match input with 
+    | Card("spades", 1) -> Printf.printf "It's the ace of spades!"
+    | _ -> Printf.printf "Unlucky"
+  
+  let pattern_matcher_2 = function 
+    | Card(class, 1) -> Printf.printf "It's the ace of %s! class"
+    | _ -> Printf.printf "Unlucky"
+		\end{lstlisting}
+		In the first example above, we have a function that will print a special string if it is passed the Ace of Spades. 
+		Here, the pattern matching checks the that the tuple associated with the data type contains the string \texttt{spades} and the number 1.\\
+		The second example uses the anonymous \texttt{function} keyword and matches the first argument of the tuple to the variable \texttt{class}.
+		\subsection*{Optionals}
+		A built in data type that allows us to use the power of OCaml's pattern matching, is the \texttt{option}. By using the \texttt{Some(\ldots)} and \texttt{None} constructors, one can create something of the type \texttt{'a option}. \\
+		\\
+		This is comparable to the \texttt{null} type in languages such as Java, however as it is part of the type system, it forces the programmer to handle any cases where \texttt{null} could be returned.
+		\subsection*{Error Handling}
+		OCaml provides multiple different ways of dealing with errors and exceptions. 
+		A simple way of signifying an error in your return type, is to return an \texttt{option} which will be \texttt{None} if there is an error. 
+		Whilst this can be inflexible for larger solutions, it also provides a quick and simple way of signifying that something has gone wrong.\\
+		\\
+		Another way of dealing with options in return types is to use the \texttt{bind} function. This also has the infix operator $>>=$
+		\begin{lstlisting}
+  val bind: 'a option -> ('a -> 'b option) -> 'b option = <fun>
+		\end{lstlisting} 
+		As the above type signiture demonstrates, \texttt{bind} will take an \texttt{option} and apply a function to its contents if it exists, or return \texttt{None} otherwise.\\
+		\\
+		OCaml provides a built in type \texttt{Result.t} which is effectively an extention of optional return types, where the programmer is able to define arbitrary data to accompany the error type. The following code demonstrates a successful return type of \texttt{int} (with an unspecified \texttt{Error} type), and a \texttt{string} error type (with an unspecified \texttt{Ok} type).
+		\begin{lstlisting}
+  # Ok 3;;
+  - : ('a, int) result = Ok 3
+  # Error "Something went wrong";;
+  - : (string, 'a) result = Error "Something went wrong";;
+		\end{lstlisting} 
+		\subsection*{Polymorphic Variants}
+		OCaml allows the programmer to define variant types such as the \texttt{Card} type that was defined earlier. This makes it very easy to make use of pattern matching with custom defined types.\\
+		\\
+		OCaml also introduces the notion of polymorphic variants which are more flexible and do not require an explicit type declaration.
+		\begin{lstlisting}
+  # let card = `Card ("spades", 1);;
+  - : val card : [> `Card of string * int ] = `Card ("spades", 1)
+		\end{lstlisting}
+		Here, we have used a backtick to define a polymorphic type, and OCaml has automatically inferred a type for us. 
+		The $>$ symbol acts as a lower limit on the tags that the variant \texttt{card} can take, i.e. it can have the tag \`\texttt{Card} or indeed other unspecified tags.\\
+		When dealing with variant types as parameters, we may see the $<$ symbol in the type signature to denote that the paramater can only belong to given set of tags. The absence of both of these symbols indicates that a variant has exactly the given type signature. 
+		\subsection*{Build system}
 	\section{Requirements Analysis}
 	%TODO: Here I need to put what the technical specification I developed for the project.
 	%TODO: Explain the requirement of a blockchain data structure
@@ -175,7 +227,7 @@
 		\begin{figure}
 			\begin{center}
 			\includegraphics[width=8cm]{figs/irmin-stores.png}
-			\caption{Irmin exposes an API for dealing with an mutable tag store and an immutable block store}
+			\caption{An Irmin Store composed of a mutable Tag Store and an immutable Block Store}
 			\label{fig:IrminBlockStore}
 			\end{center}
 		\end{figure}
