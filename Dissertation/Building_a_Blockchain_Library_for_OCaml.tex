@@ -106,14 +106,12 @@
 	\pagestyle{headings}
 	
 	\chapter{Introduction}
-	
-	%TODO: Put a description of the project in general. Talk about it being a blockchain library, separate from crypto and using a modified verion of consensus protocols.
 
 	\section{The Blockchain}
 	
-	The blockchain, in its simplest form, is a series of blocks of data, where each block contains the cryptographic hash of the previous block in the chain. This means that the chain can exhibit arbitrary branching. Figure \ref{fig:mainblockchain} is a graphical representation of a typical blockchain data structure.\\
-	The significance of blocks containing hashes of previous blocks, is that if a change were to be made to a previous block, it would change the hashes of all subsequent blocks in the chain. This means that once a block is committed to the blockchain, it cannot be modified. \\
+	The blockchain, in its simplest form, is a series of blocks of data, where each block contains the cryptographic hash of the previous block in the chain. The chain is allowed to exhibit arbitrary branching, although in most applications, branches which are significantly shorter than the longest branch are disregarded as being incorrect. Figure \ref{fig:mainblockchain} is a graphical representation of a typical blockchain data structure.\\
 	\\
+	The significance of blocks containing the hash of the previous block, is that if a change were to be made to a previous block, it would change the hashes of all subsequent blocks in the chain. This means that once a block is committed to the blockchain, it cannot be modified, without changing the entire history of the blockchain from that moment onwards.
 	\begin{figure}
 		\includegraphics[width=\linewidth]{figs/blockchain}
 		\caption{A typical blockchain structure}
@@ -124,15 +122,18 @@
 	The blockchain, as a cryptographically secure chain of blocks, was first conceptualised by Stuart Haber and W. Scott Stornetta in 1990 \cite{HaberStornetta}.
 	However, until the creation of Git \cite{Git} in 2005, the blockchain was still a relatively niche concept.\\
 	Git uses the blockchain as a basis for storing a secure history of code in the form of commits made to branches.
-	We will explore the use of the Git as a blockchain during chapter ??? \\
+	We will explore the use of the Git as a blockchain during the Implementation chapter.\\
 	\\
-	The invention of Bitcoin\cite{Bitcoin} in 2008 is seen by many as the most pivotal moment in the history of blockchain technologies.
-	Bitcoin combines the blockchain with a 'Proof of Work' consensus algorithm and the result of this is a decentralised, trust-less, peer to peer network which doesn't suffer from the double spending problem. \\
-	\\
+	The invention of Bitcoin \cite{Bitcoin} in 2008 is seen by many as the most pivotal moment in the history of blockchain technologies.
+	Bitcoin combines the blockchain with a 'Proof of Work' consensus algorithm and the result of this is a decentralised, trust-less, peer to peer network which doesn't suffer from the double spending problem.
 	\section{Blockchain Today}
 	At the time of writing, cryptocurrencies are generating a huge amount of excitement and cynicism in technology and economics communities. The value of Bitcoin is fluctuating on a day-by-day basis and many alternative currencies are gaining in popularity.\\
-	For example, Ethereum is a blockchain platform that allows participants to run arbitrary\footnote{Whilst there are restrictions to code run on the blockchain (e.g. it has to be deterministic), the Ethereum language 'Solidity' is Turing complete.} code on the blockchain. These are known as Smart Contracts.
-
+	For example, Ethereum is a blockchain platform that allows participants to run arbitrary\footnote{Whilst there are restrictions to code run on the blockchain (e.g. it has to be deterministic), the Ethereum language 'Solidity' is Turing complete.} code on the blockchain. These are known as Smart Contracts.\\
+	\\
+	However, whilst it is possible to think of applications for blockchain technology in almost every sector, the development of applications outside the scope of crytocurrencies has been limited. 
+	The reason for this is still very much open to debate and the subject of a lot of controversy, however, one argument is that it can be hard for developers to build applications that leverage the power of the blockchain as there are few services or libraries to help with this.\\
+	\\
+	If one considers the example of OCaml, there are no libraries which allow a user to easily get started with building blockchain applications. The aim of this project 
 	\chapter{Preparation}
 	\section{Starting Point}
 		The project built upon functionality provided by Irmin [1] which is a distributed database system.  Irmin is fast, durable and has the branching capabilities which are required to build a blockchain.\\
