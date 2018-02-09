@@ -193,14 +193,27 @@
 		Here, we have used a backtick to define a polymorphic type, and OCaml has automatically inferred a type for us. 
 		The $>$ symbol acts as a lower limit on the tags that the variant \texttt{card} can take, i.e. it can have the tag \`\texttt{Card} or indeed other unspecified tags.\\
 		When dealing with variant types as parameters, we may see the $<$ symbol in the type signature to denote that the paramater can only belong to given set of tags. The absence of both of these symbols indicates that a variant has exactly the given type signature. 
-		\subsection*{Build system}
-		When developing a large scale system with OCaml, there are a couple of build systems available to use. jbuilder \cite{jbuilder} is one of these systems which is becoming increasingly popular and is used daily by hundreds of developers.\\
+		\subsection*{Development Environment}
+		When developing a large scale system with OCaml, there are a couple of build systems available to use. 'jbuilder' \cite{jbuilder} is one of these systems which is becoming increasingly popular and is used daily by hundreds of developers.\\
 		\\
-		jbuilder allows the developer to specify arbitrary file structures which contain executables, libraries and more. Whilst setting up my project, I defined a structure consisting of three main directories: one containing the executable for running a leader, one containing the executable for running a participant, and one for containing utility libraries used by my project. 
+		jbuilder allows the developer to specify arbitrary directory structures containing executables, libraries and more. Whilst setting up my project, I defined a structure consisting of three main directories: one containing the executable for running a leader node, one containing the executable for running a participant node, and one for containing utility libraries used by my project.\\
+		I also used GNU Make \cite{GNUMake} to invoke jbuilder which allowed me to easily build and run any executables from the root of the directory.\\
+		\\
+		In order to ensure that the project would always build, I set up a continuous integration workflow using Travis-CI. 
+		This was particularly useful as it ensured that whenever I pushed any updates to my GitHub repository, Travis would attempt to build the system and would notify me whenever there were any errors during the build.
 	\section{Requirements Analysis}
 	%TODO: Here I need to put what the technical specification I developed for the project.
-	%TODO: Explain the requirement of a blockchain data structure
-	%TODO: Explain that there has to be some form of eventual consistency
+	During the preparation stage of my project, I spent some time analysing the requirements that would be suitable for my projects. This proved a good way of guiding the progress of the project and making sure that I solved all the problems that I set out to. Here, I will set out the criteria that I decided upon before starting development on the project.\\
+	\\
+	\subsection*{Data Structure}
+	A key component of this project was to build a blockchain data structure that would allow transactions to be added to a ledger. 
+	From a participating node, it should be possible to add a transaction, of a given type, between two identities. 
+	It should also be possible to view an ordered list of all transactions which currently exist in the blockchain.
+	\subsection*{Consensus}
+	Many uses of blockchain rely on achieving consensus using a Proof of Work principle. 
+	Whilst this may or may not be a suitable method of achieving consensus for this project, it is important that the implementation guarantees a strict ordering of transactions in the ledger.
+	I.e. should one node read a sequence of transactions from a blockchain, then all other nodes will percieve the sequence of transactions in the same order.
+	\subsection*{Satisfaction Criteria}
 	%TODO: Explain that it has to tolerate 4+ nodes
 	\chapter{Implementation}
 	\section{The Blockchain Data Structure}
