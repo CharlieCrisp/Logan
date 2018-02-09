@@ -85,10 +85,9 @@
 	extent for a comparable purpose.
 	
 	\bigskip
-	\leftline{Signed [signature]}
-	
-	\medskip
-	\leftline{Date [date]}
+	\leftline{Signed}
+	\bigskip
+	\leftline{Date}
 	
 	\tableofcontents
 	
@@ -199,9 +198,7 @@
 		In order to ensure that the project would always build, I set up a continuous integration workflow using Travis-CI. 
 		This was particularly useful as it ensured that whenever I pushed any updates to my GitHub repository, Travis would attempt to build the system and would notify me whenever there were any errors during the build.
 	\section{Requirements Analysis}
-	%TODO: Here I need to put what the technical specification I developed for the project.
-	During the preparation stage of my project, I spent some time analysing the requirements that would be suitable for my projects. This proved a good way of guiding the progress of the project and making sure that I solved all the problems that I set out to. Here, I will set out the criteria that I decided upon before starting development on the project.\\
-	\\
+	During the preparation stage of my project, I spent some time analysing the requirements that would be suitable for my projects. This proved a good way of guiding the progress of the project and making sure that I solved all the problems that I set out to. Here, I will set out the criteria that I decided upon before starting development on the project.
 	\subsection*{Data Structure}
 	A key component of this project was to build a blockchain data structure that would allow transactions to be added to a ledger. 
 	From a participating node, it should be possible to add a transaction, of a given type, between two identities. 
@@ -209,9 +206,11 @@
 	\subsection*{Consensus}
 	Many uses of blockchain rely on achieving consensus using a Proof of Work principle. 
 	Whilst this may or may not be a suitable method of achieving consensus for this project, it is important that the implementation guarantees a strict ordering of transactions in the ledger.
-	I.e. should one node read a sequence of transactions from a blockchain, then all other nodes will percieve the sequence of transactions in the same order.
-	\subsection*{Satisfaction Criteria}
-	%TODO: Explain that it has to tolerate 4+ nodes
+	I.e. should one node read a sequence of transactions from a blockchain, then all other nodes will percieve the sequence of transactions in the same order.\\
+	\\
+	It is also important that this consensus mechanism is scalable, and within the scope of this project, it should be possible for the blockchain to be shared by 4 or more nodes in a network. This should not hinder the performance of the system, and it should still be able to handle multiple successful transactions per second.\\
+	\\
+	In the case of failure for any singular node, the system should be able to recover or continue within a countable number of seconds. It would be desirable (although not a criteria for this project) for the system to be able to recover after the failure of multiple nodes, and even in the case of a network partition. 
 	\chapter{Implementation}
 	\section{The Blockchain Data Structure}
 	\subsection*{Git as a blockchain}
