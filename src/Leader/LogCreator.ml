@@ -9,33 +9,27 @@ let run = Lwt_main.run
 let path = []
 
 (*TODO: remove wip branch after merge*)
-(*string -> unit Lwt.t*)
 let add_value_to_blockchain value = IrminLogBlock.clone_force blockchain_master_branch "wip" >>= fun wip_branch ->
   IrminLogBlock.append ~message:"Entry added to the blockchain" wip_branch ~path:path value >>= fun _ -> 
   IrminLogBlock.merge wip_branch ~into:blockchain_master_branch
 
 (*TODO: remove wip branch after merge*)
-(*string -> unit Lwt.t*)
 let add_transaction_to_mempool value =
   let message = LogStringCoder.encode_string "some id" "another id" value in 
   IrminLogMem.clone_force mempool_master_branch "wip" >>= fun wip_branch ->
   IrminLogMem.append ~message:"Entry added to the blockchain" wip_branch ~path:path message >>= fun _ -> 
   IrminLogMem.merge wip_branch ~into:mempool_master_branch
 
-(*string list -> unit Lwt.t*)
 let add_list_to_blockchain list = Lwt_list.iter_s add_value_to_blockchain list
 
-(*unit -> string option Lwt.t*)
 let get_latest_blockchain_message () = IrminLogBlock.get_cursor blockchain_master_branch ~path:path >>= function
     | Some(cursor) -> IrminLogBlock.read cursor ~num_items:1 >>= (function
       | (x::_, _) -> Lwt.return @@ Some(x)
       | _ -> Lwt.return None)
     | None -> Lwt.return None
 
-(*?n:int -> string -> cursor -> int option Lwt.t*)
 let rec count_with_cursor ?(n=0) (comparison_message:string) cursor = 
   (*read one more item and check if it's same as comparison_message*)
-  (*string list * cursor option*)
   IrminLogMem.read cursor ~num_items:1 >>= function
       | (mempool_message::_, _) when mempool_message = comparison_message -> Lwt.return (Some(n))
       | (_, None) -> Lwt.return (Some(n))
@@ -43,7 +37,6 @@ let rec count_with_cursor ?(n=0) (comparison_message:string) cursor =
 
 (*TODO: s there a way to use >>= (or similar) below, rather than let statements?*)
 (*Count how many new items there are in the memPool*)
-(*unit -> int option Lwt.t*)
 let count_new_updates () = 
   get_latest_blockchain_message() >>= fun latest_message ->
   IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun cursor ->
@@ -52,8 +45,6 @@ let count_new_updates () =
     |(None, Some(initial_cursor)) -> count_with_cursor "NOT A MESSAGE" initial_cursor
     | _ -> Lwt.return None
 
-
-(*unit -> string list option*)
 let get_new_updates () = 
   IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun cursor ->
   count_new_updates () >>= fun number_of_updates ->
@@ -75,7 +66,6 @@ let print_list () = Lwt.return @@ Printf.printf "\n\027[92m-----Start Block-----
   print_list list >>= fun _ ->
   Lwt.return @@ Printf.printf "\n\027[91m------End MemPo------\027[39m\n\n%!"
 
-(*unit -> 'a Lwt.t*)
 let rec run_leader () = get_new_updates() >>= function 
   | None -> Lwt_unix.sleep 1.0 >>= fun _ ->
       run_leader ()
@@ -87,7 +77,6 @@ let rec run_leader () = get_new_updates() >>= function
       Lwt_unix.sleep 1.0 >>= fun _ ->
       run_leader ()
 
-(* unit -> 'a Lwt.t*)
 let start_leader () = add_transaction_to_mempool "New Leader" >>= fun _ ->
   run_leader();;     
 
