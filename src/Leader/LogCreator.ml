@@ -7,25 +7,12 @@ let mempool_master_branch = Lwt_main.run (IrminLog.init ~root: "/tmp/ezirminl/me
 let run = Lwt_main.run
 let path = []
 
-(*TODO: remove wip branch after merge*)
-let add_value_to_blockchain value = IrminLog.clone_force blockchain_master_branch "wip" >>= fun wip_branch ->
-  IrminLog.append ~message:"Entry added to the blockchain" wip_branch ~path:path value >>= fun _ -> 
-  IrminLog.merge wip_branch ~into:blockchain_master_branch
+let add_value_to_blockchain value = IrminLog.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path value
 
-(*TODO: remove wip branch after merge*)
-let add_transaction_to_mempool value =
-  let message = LogStringCoder.encode_string "some id" "another id" value in 
-  IrminLog.clone_force mempool_master_branch "wip" >>= fun wip_branch ->
-  IrminLog.append ~message:"Entry added to the blockchain" wip_branch ~path:path message >>= fun _ -> 
-  IrminLog.merge wip_branch ~into:mempool_master_branch
+let add_genesis_to_mempool () = let message = "Genesis Commit" in 
+  IrminLog.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:path message
 
 let add_list_to_blockchain list = Lwt_list.iter_s add_value_to_blockchain list
-
-let get_latest_blockchain_message () = IrminLog.get_cursor blockchain_master_branch ~path:path >>= function
-    | Some(cursor) -> IrminLog.read cursor ~num_items:1 >>= (function
-      | (x::_, _) -> Lwt.return @@ Some(x)
-      | _ -> Lwt.return None)
-    | None -> Lwt.return None
 
 let rec get_with_cursor mem_cursor block_cursor item_acc= 
   Lwt.return @@ IrminLog.is_earlier block_cursor ~than:mem_cursor >>= function
@@ -65,7 +52,7 @@ let rec run_leader () = get_new_updates() >>= function
       Lwt_unix.sleep 1.0 >>= fun _ ->
       run_leader ()
 
-let start_leader () = add_transaction_to_mempool "New Leader" >>= fun _ ->
+let start_leader () = add_genesis_to_mempool() >>= fun _ ->
   run_leader();;     
 
 Lwt_main.run @@ start_leader () ;;
