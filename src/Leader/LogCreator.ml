@@ -1,57 +1,47 @@
 open Lwt.Infix
-module IrminLogBlock = Ezirmin.FS_log(Tc.String)
-module IrminLogMem = Ezirmin.FS_log(Tc.String)
+module IrminLog = Ezirmin.FS_log(Tc.String)
 
-let blockchain_master_branch = Lwt_main.run (IrminLogBlock.init ~root: "/tmp/ezirminl/blockchain" ~bare:true () >>= IrminLogBlock.master)
-let mempool_master_branch = Lwt_main.run (IrminLogMem.init ~root: "/tmp/ezirminl/mempool" ~bare:true () >>= IrminLogMem.master)
+let blockchain_master_branch = Lwt_main.run (IrminLog.init ~root: "/tmp/ezirminl/blockchain" ~bare:true () >>= IrminLog.master)
+let mempool_master_branch = Lwt_main.run (IrminLog.init ~root: "/tmp/ezirminl/mempool" ~bare:true () >>= IrminLog.master)
 
 let run = Lwt_main.run
 let path = []
 
 (*TODO: remove wip branch after merge*)
-let add_value_to_blockchain value = IrminLogBlock.clone_force blockchain_master_branch "wip" >>= fun wip_branch ->
-  IrminLogBlock.append ~message:"Entry added to the blockchain" wip_branch ~path:path value >>= fun _ -> 
-  IrminLogBlock.merge wip_branch ~into:blockchain_master_branch
+let add_value_to_blockchain value = IrminLog.clone_force blockchain_master_branch "wip" >>= fun wip_branch ->
+  IrminLog.append ~message:"Entry added to the blockchain" wip_branch ~path:path value >>= fun _ -> 
+  IrminLog.merge wip_branch ~into:blockchain_master_branch
 
 (*TODO: remove wip branch after merge*)
 let add_transaction_to_mempool value =
   let message = LogStringCoder.encode_string "some id" "another id" value in 
-  IrminLogMem.clone_force mempool_master_branch "wip" >>= fun wip_branch ->
-  IrminLogMem.append ~message:"Entry added to the blockchain" wip_branch ~path:path message >>= fun _ -> 
-  IrminLogMem.merge wip_branch ~into:mempool_master_branch
+  IrminLog.clone_force mempool_master_branch "wip" >>= fun wip_branch ->
+  IrminLog.append ~message:"Entry added to the blockchain" wip_branch ~path:path message >>= fun _ -> 
+  IrminLog.merge wip_branch ~into:mempool_master_branch
 
 let add_list_to_blockchain list = Lwt_list.iter_s add_value_to_blockchain list
 
-let get_latest_blockchain_message () = IrminLogBlock.get_cursor blockchain_master_branch ~path:path >>= function
-    | Some(cursor) -> IrminLogBlock.read cursor ~num_items:1 >>= (function
+let get_latest_blockchain_message () = IrminLog.get_cursor blockchain_master_branch ~path:path >>= function
+    | Some(cursor) -> IrminLog.read cursor ~num_items:1 >>= (function
       | (x::_, _) -> Lwt.return @@ Some(x)
       | _ -> Lwt.return None)
     | None -> Lwt.return None
 
-let rec count_with_cursor ?(n=0) (comparison_message:string) cursor = 
-  (*read one more item and check if it's same as comparison_message*)
-  IrminLogMem.read cursor ~num_items:1 >>= function
-      | (mempool_message::_, _) when mempool_message = comparison_message -> Lwt.return (Some(n))
-      | (_, None) -> Lwt.return (Some(n))
-      | (_, Some(curs)) -> count_with_cursor ~n:(n+1) comparison_message curs (*try the next one*)
-
-(*TODO: s there a way to use >>= (or similar) below, rather than let statements?*)
-(*Count how many new items there are in the memPool*)
-let count_new_updates () = 
-  get_latest_blockchain_message() >>= fun latest_message ->
-  IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun cursor ->
-  match (latest_message, cursor) with 
-    |(Some(committed_message), Some(initial_cursor)) -> count_with_cursor committed_message initial_cursor
-    |(None, Some(initial_cursor)) -> count_with_cursor "NOT A MESSAGE" initial_cursor
-    | _ -> Lwt.return None
+let rec get_with_cursor mem_cursor block_cursor item_acc= 
+  Lwt.return @@ IrminLog.is_earlier block_cursor ~than:mem_cursor >>= function
+    | Some(true) -> IrminLog.read ~num_items:1 mem_cursor >>= (function 
+      | ([item], Some(new_cursor)) -> get_with_cursor new_cursor block_cursor (item::item_acc)
+      | _ ->Lwt.return item_acc)
+    | _ -> Lwt.return item_acc
 
 let get_new_updates () = 
-  IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun cursor ->
-  count_new_updates () >>= fun number_of_updates ->
-  match (cursor,number_of_updates) with
-    | (Some(curs), Some(updates)) -> (IrminLogMem.read curs ~num_items:updates >>= function
-      | (list, _) -> Lwt.return @@ Some(list))
-    | _ -> Lwt.return None
+  IrminLog.get_cursor blockchain_master_branch ~path:path >>= fun block_cursor ->
+  IrminLog.get_cursor mempool_master_branch ~path:path >>= fun mem_cursor ->
+  match (block_cursor, mem_cursor) with
+    | (Some(bl_cursor), Some(m_cursor)) -> get_with_cursor m_cursor bl_cursor []
+    | (None, Some(m_cursor)) -> IrminLog.read ~num_items: 1 m_cursor >>= (function 
+      | (xs, _) ->Lwt.return xs)
+    | _ -> Lwt.return []
 
 let rec print_list list = match list with 
   | (x::[]) -> Lwt.return @@ Printf.printf "%s%!" x
@@ -59,19 +49,17 @@ let rec print_list list = match list with
   | [] -> Lwt.return @@ ()
 
 let print_list () = Lwt.return @@ Printf.printf "\n\027[92m-----Start Block-----\027[32m\n" >>= fun _ ->
-  IrminLogBlock.read_all blockchain_master_branch [] >>= fun list ->
+  IrminLog.read_all blockchain_master_branch [] >>= fun list ->
   print_list list >>= fun _ ->
   Lwt.return @@ Printf.printf "\n\027[93m-----Start MemPo-----\027[33m\n" >>= fun _ ->
-  IrminLogMem.read_all mempool_master_branch [] >>= fun list ->
+  IrminLog.read_all mempool_master_branch [] >>= fun list ->
   print_list list >>= fun _ ->
   Lwt.return @@ Printf.printf "\n\027[91m------End MemPo------\027[39m\n\n%!"
 
-let rec run_leader () = get_new_updates() >>= function 
-  | None -> Lwt_unix.sleep 1.0 >>= fun _ ->
+let rec run_leader () = get_new_updates() >>= function
+  | [] -> Lwt_unix.sleep 1.0 >>= fun _ ->
       run_leader ()
-  | Some([]) -> Lwt_unix.sleep 1.0 >>= fun _ ->
-      run_leader ()
-  | Some(updates) -> add_list_to_blockchain updates >>= fun _ ->
+  | updates -> add_list_to_blockchain updates >>= fun _ ->
       Lwt.return @@ Printf.printf "\027[95mFound New Updates:\027[39m\n%! " >>= fun _ ->
       print_list() >>= fun _ ->
       Lwt_unix.sleep 1.0 >>= fun _ ->
