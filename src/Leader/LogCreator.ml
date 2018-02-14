@@ -80,12 +80,3 @@ let apply f = f()
 let tasks = [start_leader;waitAndAdd];;
 
 Lwt_main.run @@ Lwt_list.iter_p apply tasks;;  *)
-
-(*
-#use "Documents/CompSci/PartIIProject/src/Leader/LogCreator.ml";;
-
-Setup - get the ip of the leader and then ask for user to enter transactions
-Transactions can also be registering of items (maybe from a set registration id)
-
-Then need some mechanism for changing leader... is this possible without http requests?
-*)
