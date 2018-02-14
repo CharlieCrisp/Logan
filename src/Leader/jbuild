@@ -1,8 +1,7 @@
 (jbuild_version 1)
 
-(executable
- ((name LogCreator)
-  (modules (LogCreator))
-  (modes (native))
-  (libraries (lwt.unix ezirmin tc lwt ezjsonm core_extended logstringcoder))))
+(library
+ ((name         Blockchain)
+  (public_name  blockchain)
+  (libraries (lwt.unix ezirmin tc lwt core ezjsonm core_extended))))
 

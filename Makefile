@@ -1,14 +1,20 @@
 all:
-	jbuilder build src/Leader/LogCreator.exe
+	jbuilder build src/Examples/LogCreatorDemo.exe
 	jbuilder build src/Participant/ParticipantRunner.exe
+	jbuilder build src/Tests/test_single_machine_speed.exe
 
 lead:
-	_build/default/src/Leader/LogCreator.exe
+	_build/default/src/Examples/LogCreatorDemo.exe
 
 part:
 	_build/default/src/Participant/ParticipantRunner.exe
 
-clean:
+tester:
+	_build/default/src/Tests/test_single_machine_speed.exe
+
+flush:
 	jbuilder clean
 	rm -rf /tmp/ezirminl
-	rm *~
+	jbuilder build src/Tests/test_single_machine_speed.exe
+	jbuilder build src/Examples/LogCreatorDemo.exe
+	jbuilder build src/Participant/ParticipantRunner.exe
