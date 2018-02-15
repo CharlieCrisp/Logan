@@ -1,14 +1,14 @@
 open Lwt.Infix
-module IrminLogMem = Ezirmin.FS_log(Tc.String)
+module IrminLog = Ezirmin.FS_log(Tc.String)
 
 let run = Lwt_main.run;;
 let write value = Lwt_io.write Lwt_io.stdout value;;
 let read () = Lwt_io.read_line Lwt_io.stdin ;;
-let push = IrminLogMem.Sync.push;;
-let pull = IrminLogMem.Sync.pull;;
+let push = IrminLog.Sync.push;;
+let pull = IrminLog.Sync.pull;;
 
 let root = "/tmp/ezirminl/mempool"
-let mempool_master_branch = Lwt_main.run (IrminLogMem.init ~root:root ~bare:true () >>= IrminLogMem.master)
+let mempool_master_branch = Lwt_main.run (IrminLog.init ~root:root ~bare:true () >>= IrminLog.master)
 let path = []
 
 let get_id () = write "\n\027[93mWhat is your current ID: \027[39m" >>= fun _ ->
@@ -24,7 +24,7 @@ let try_get_remote_repo is_remote = match is_remote with
       read() >>= fun user ->
       write "Destination Hostname: " >>= fun _ ->
       read() >>= fun host ->
-      Lwt.return @@ IrminLogMem.Sync.remote_uri ("git+ssh://"^user^"@"^host^"/tmp/ezirmin/mempool") >>= fun remote ->
+      Lwt.return @@ IrminLog.Sync.remote_uri ("git+ssh://"^user^"@"^host^"/tmp/ezirmin/mempool") >>= fun remote ->
       Lwt.return @@ Some(remote)
     | _ -> Lwt.return None
 
@@ -37,9 +37,9 @@ exception Could_Not_Pull_From_Remote
 exception Could_Not_Push_To_Remote
 
 let add_local_message_to_mempool message =
-  IrminLogMem.clone_force mempool_master_branch "wip" >>= fun wip_branch ->
-  IrminLogMem.append ~message:"Entry added to the blockchain" wip_branch ~path:path message >>= fun _ -> 
-  IrminLogMem.merge wip_branch ~into:mempool_master_branch ;;
+  IrminLog.clone_force mempool_master_branch "wip" >>= fun wip_branch ->
+  IrminLog.append ~message:"Entry added to the blockchain" wip_branch ~path:path message >>= fun _ -> 
+  IrminLog.merge wip_branch ~into:mempool_master_branch ;;
 
 let add_transaction_to_mempool sender_id receiver_id book_id =
   let message = LogStringCoder.encode_string sender_id receiver_id book_id in 
