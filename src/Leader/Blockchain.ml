@@ -5,7 +5,7 @@ module type Remotes = sig
 end
 
 module type LeaderInterface = sig
-  val start_leader: unit -> 'a Lwt.t
+  val start_leader: unit -> unit Lwt.t
 end
 
 module Leader (Rem: Remotes) : LeaderInterface = struct
@@ -52,17 +52,33 @@ module Leader (Rem: Remotes) : LeaderInterface = struct
     IrminLog.read_all mempool_master_branch [] >>= fun list ->
     print_list list >>= fun _ ->
     Lwt.return @@ Printf.printf "\n\027[91m------End MemPo------\027[39m\n\n%!"
+   
+  let interrupted_bool = ref false
+  let interrupted_mvar = Lwt_mvar.create_empty()
 
-  let rec run_leader () = get_new_updates() >>= function
-    | [] -> Lwt_unix.sleep 1.0 >>= fun _ ->
-        run_leader ()
-    | updates -> add_list_to_blockchain updates >>= fun _ ->
-        Lwt.return @@ Printf.printf "\027[95mFound New Updates:\027[39m\n%! " >>= fun _ ->
-        print_list() >>= fun _ ->
-        Lwt_unix.sleep 1.0 >>= fun _ ->
-        run_leader ()
+  let rec run_leader () = match !interrupted_bool with
+    | true -> Lwt_mvar.put interrupted_mvar true >>= fun _ -> Lwt.return ()
+    | false -> (
+      get_new_updates() >>= function
+      | [] -> Lwt_unix.sleep 1.0 >>= fun _ ->
+          run_leader ()
+      | updates -> add_list_to_blockchain updates >>= fun _ ->
+          Lwt.return @@ Printf.printf "\027[95mFound New Updates:\027[39m\n%! " >>= fun _ ->
+          print_list() >>= fun _ ->
+          Lwt_unix.sleep 1.0 >>= fun _ ->
+          run_leader ())
+  
+  let fail_nicely str = interrupted_bool := true;
+    run (Lwt_mvar.take interrupted_mvar >>= fun _ -> 
+      Lwt.return @@ Printf.printf "\nHalting execution due to: %s%!" str)
+    
+  let register_handlers () = 
+    let _ = Lwt_unix.on_signal Sys.sigterm (fun _ -> fail_nicely "SIGTERM") in
+    let _ = Lwt_unix.on_signal Sys.sigint (fun _ -> fail_nicely "SIGINT") in 
+    ()
 
   let start_leader () = add_genesis_to_mempool() >>= fun _ ->
+    register_handlers();
     run_leader()
 end;;
   
