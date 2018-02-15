@@ -1,5 +1,5 @@
 module Remote : Blockchain.Remotes= struct
-  let remotes = ["asdfasdfsd"]
+  let remotes = []
 end
 
 module Leader = Blockchain.Leader(Remote);;

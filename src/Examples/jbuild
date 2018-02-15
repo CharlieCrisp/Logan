@@ -1,7 +1,7 @@
 (jbuild_version 1)
 
 (executable
- ((name LogCreatorDemo)
-  (modules (LogCreatorDemo))
+ ((name LeaderDemo)
+  (modules (LeaderDemo))
   (modes (native))
   (libraries (blockchain logstringcoder lwt))))
