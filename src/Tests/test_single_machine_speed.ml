@@ -2,7 +2,7 @@ open Lwt.Infix
 module IrminLogMem = Ezirmin.FS_log(Tc.String)
 
 let run = Lwt_main.run;;
-let root = "/tmp/ezirminl/mempool"
+let root = "/tmp/ezirminl/part/mempool"
 let mempool_master_branch = Lwt_main.run (IrminLogMem.init ~root:root ~bare:true () >>= IrminLogMem.master)
 let path = []
 

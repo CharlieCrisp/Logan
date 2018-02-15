@@ -11,8 +11,8 @@ end
 module Leader (Rem: Remotes) : LeaderInterface = struct
   module IrminLog = Ezirmin.FS_log(Tc.String)
 
-  let blockchain_master_branch = Lwt_main.run (IrminLog.init ~root: "/tmp/ezirminl/blockchain" ~bare:true () >>= IrminLog.master)
-  let mempool_master_branch = Lwt_main.run (IrminLog.init ~root: "/tmp/ezirminl/mempool" ~bare:true () >>= IrminLog.master)
+  let blockchain_master_branch = Lwt_main.run (IrminLog.init ~root: "/tmp/ezirminl/lead/blockchain" ~bare:true () >>= IrminLog.master)
+  let mempool_master_branch = Lwt_main.run (IrminLog.init ~root: "/tmp/ezirminl/lead/mempool" ~bare:true () >>= IrminLog.master)
 
   let run = Lwt_main.run
   let path = []

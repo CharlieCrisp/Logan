@@ -7,7 +7,7 @@ let read () = Lwt_io.read_line Lwt_io.stdin ;;
 let push = IrminLog.Sync.push;;
 let pull = IrminLog.Sync.pull;;
 
-let root = "/tmp/ezirminl/mempool"
+let root = "/tmp/ezirminl/part/mempool"
 let mempool_master_branch = Lwt_main.run (IrminLog.init ~root:root ~bare:true () >>= IrminLog.master)
 let path = []
 
