@@ -46,7 +46,7 @@ let add_transaction_to_mempool sender_id receiver_id book_id =
   match is_remote with
     | false -> add_local_message_to_mempool message
     | true -> (match opt_remote with 
-      | Some(remote) -> pull remote mempool_master_branch `Update >>= (function
+      | Some(remote) -> pull remote mempool_master_branch `Merge >>= (function
         | `Ok -> add_local_message_to_mempool message >>= fun _ ->
           push remote mempool_master_branch >>= (function
             | `Ok -> Lwt.return ()
