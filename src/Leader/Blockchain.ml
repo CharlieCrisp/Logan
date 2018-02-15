@@ -82,13 +82,3 @@ module Leader (Rem: Remotes) : LeaderInterface = struct
     run_leader()
 end;;
   
-
-(* The following code demonstrates how to start a leader, and on another thread, wait a few seconds and then add something to the mempool.
-let waitAndAdd () = Lwt_unix.sleep 3.0 >>= fun _ ->
-  add_transaction_to_mempool "New Value!"
-
-let apply f = f()
-
-let tasks = [start_leader;waitAndAdd];;
-
-Lwt_main.run @@ Lwt_list.iter_p apply tasks;;  *)
