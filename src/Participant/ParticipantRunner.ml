@@ -24,7 +24,7 @@ let try_get_remote_repo is_remote = match is_remote with
       read() >>= fun user ->
       write "Destination Hostname: " >>= fun _ ->
       read() >>= fun host ->
-      Lwt.return @@ IrminLog.Sync.remote_uri ("git+ssh://"^user^"@"^host^"/tmp/ezirmin/mempool") >>= fun remote ->
+      Lwt.return @@ IrminLog.Sync.remote_uri ("git+ssh://"^user^"@"^host^"/tmp/ezirmin/lead/mempool") >>= fun remote ->
       Lwt.return @@ Some(remote)
     | _ -> Lwt.return None
 
