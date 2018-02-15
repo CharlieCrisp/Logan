@@ -10,21 +10,22 @@ end
 
 module Leader (Rem: Remotes) : LeaderInterface = struct
   module IrminLog = Ezirmin.FS_log(Tc.String)
-
-  let blockchain_master_branch = Lwt_main.run (IrminLog.init ~root: "/tmp/ezirminl/lead/blockchain" ~bare:true () >>= IrminLog.master)
-  let mempool_master_branch = Lwt_main.run (IrminLog.init ~root: "/tmp/ezirminl/lead/mempool" ~bare:true () >>= IrminLog.master)
-
   let run = Lwt_main.run
   let path = []
-
+  let blockchain_master_branch = run (IrminLog.init ~root: "/tmp/ezirminl/lead/blockchain" ~bare:true () >>= IrminLog.master)
+  let mempool_master_branch = run (IrminLog.init ~root: "/tmp/ezirminl/lead/mempool" ~bare:true () >>= IrminLog.master)
+  let local_mempool_master_branch = run (IrminLog.init ~root: "/tmp/ezirminl/part/mempool" ~bare:true () >>= IrminLog.master)
+  
   let remotes = List.map (fun str -> IrminLog.Sync.remote_uri str) Rem.remotes
 
   let add_value_to_blockchain value = IrminLog.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path value
+  let add_value_to_mempool value = IrminLog.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:path value
 
   let add_genesis_to_mempool () = let message = "Genesis Commit" in 
     IrminLog.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:path message
 
   let add_list_to_blockchain list = Lwt_list.iter_s add_value_to_blockchain list
+  let add_list_to_mempool list = Lwt_list.iter_s add_value_to_mempool list
 
   let rec get_with_cursor mem_cursor block_cursor item_acc= 
     Lwt.return @@ IrminLog.is_earlier block_cursor ~than:mem_cursor >>= function
@@ -32,7 +33,9 @@ module Leader (Rem: Remotes) : LeaderInterface = struct
         | ([item], Some(new_cursor)) -> get_with_cursor new_cursor block_cursor (item::item_acc)
         | _ ->Lwt.return item_acc)
       | _ -> Lwt.return item_acc
-
+  
+  (*This function gets new updates from the local mempool so they can be added to the blockchain*)
+  (*Earliest messages will appear first in resulting list*)
   let get_new_updates () = 
     IrminLog.get_cursor blockchain_master_branch ~path:path >>= fun block_cursor ->
     IrminLog.get_cursor mempool_master_branch ~path:path >>= fun mem_cursor ->
@@ -46,6 +49,16 @@ module Leader (Rem: Remotes) : LeaderInterface = struct
     IrminLog.Sync.pull remote mempool_master_branch `Merge >>= function
     | `Ok -> Printf.printf "Successfully pulled from remote"; Lwt.return ()
     | _ -> Printf.printf "Error while pulling from remote"; Lwt.return ()
+
+  let update_from_local_mempool () = 
+    IrminLog.get_cursor mempool_master_branch ~path:path >>= fun leader_mempool ->
+    IrminLog.get_cursor local_mempool_master_branch ~path:path >>= fun part_mempool ->
+    match (leader_mempool, part_mempool) with
+      | (Some(l_cursor), Some(p_cursor)) -> get_with_cursor p_cursor l_cursor [] >>= fun updates ->
+        add_list_to_mempool updates
+      | (None, Some(p_cursor)) -> IrminLog.read ~num_items: 1 p_cursor >>= fun (updates, _) ->
+        add_list_to_mempool updates
+      | _ -> Lwt.return ()
 
   (*This will sequentially merge changes from all the mempools in the known remotes*)
   let update_mempool () = let rems = Lwt_stream.of_list remotes in 
@@ -69,7 +82,8 @@ module Leader (Rem: Remotes) : LeaderInterface = struct
 
   let rec run_leader () = match !interrupted_bool with
     | true -> Lwt_mvar.put interrupted_mvar true >>= fun _ -> Lwt.return ()
-    | false -> ( 
+    | false -> (
+      update_from_local_mempool() >>= fun _ ->
       update_mempool() >>= fun _ ->
       get_new_updates() >>= function
       | [] -> Lwt_unix.sleep 1.0 >>= fun _ ->
