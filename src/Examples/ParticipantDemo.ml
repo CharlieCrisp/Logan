@@ -40,8 +40,10 @@ let get_log_entry_tuple () =
 let rec start_participant () = 
   write "\027[35m-----------------------------------\n-----Enter Transaction Details-----\027[39m" >>= fun _ ->
   get_log_entry_tuple() >>= fun value ->
-  Part.add_transaction_to_mempool value >>= fun _ ->
-  write "\n\027[32mITEM ADDED SUCCESSFULLY\n" >>= 
+  Part.add_transaction_to_mempool value >>= function
+    | `Ok -> write "\n\027[32mITEM ADDED SUCCESSFULLY\n" >>= 
+      start_participant
+    | _ -> write "\n\027[31mFAILED TO ADD ITEM\n" >>= 
   start_participant;;
 
 run @@ start_participant ();;

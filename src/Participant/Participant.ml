@@ -7,7 +7,7 @@ end
 
 module type I_Participant = sig 
   type t
-  val add_transaction_to_mempool: t -> unit Lwt.t
+  val add_transaction_to_mempool: t -> [> `Could_Not_Pull_From_Remote | `Ok] Lwt.t
 end
 
 module type I_LogStringCoder = sig
@@ -18,7 +18,6 @@ end
 module Make(Config: I_ParticipantConfig)(LogCoder: I_LogStringCoder): I_Participant with type t = LogCoder.t = struct 
   type t = LogCoder.t
   module IrminLog = Ezirmin.FS_log(Tc.String)
-  exception Could_Not_Pull_From_Remote
   let run = Lwt_main.run
   let pull = IrminLog.Sync.pull
   let root = "/tmp/ezirminl/part/mempool"
@@ -32,10 +31,11 @@ module Make(Config: I_ParticipantConfig)(LogCoder: I_LogStringCoder): I_Particip
   let add_transaction_to_mempool value =
     let message = LogCoder.encode_string value in 
     match Config.is_local with
-      | true -> add_local_message_to_mempool message
-      | false -> pull remote mempool_master_branch `Merge >>= (function
-        | `Ok -> add_local_message_to_mempool message
-        | _ -> raise Could_Not_Pull_From_Remote)
+      | true -> add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok
+      | false -> Lwt.catch 
+        (fun _ -> pull remote mempool_master_branch `Merge) 
+        (fun _ -> Lwt.return `Error) >>= (function
+          | `Ok -> add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok
+          | _ -> Lwt.return `Could_Not_Pull_From_Remote)
 end
-
 
