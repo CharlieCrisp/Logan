@@ -11,9 +11,9 @@ let get_is_local () = write "\027[93mIs your destination log local or remote (l/
     | "l" -> Lwt.return true
     | _ -> Lwt.return false
 let try_get_remote_repo is_local = match is_local with
-    | false -> write "Destination Username: " >>= fun _ ->
+    | false -> write "\027[93mDestination Username: \027[39m" >>= fun _ ->
       read() >>= fun user ->
-      write "Destination Hostname: " >>= fun _ ->
+      write "\027[93mDestination Hostname: \027[39m" >>= fun _ ->
       read() >>= fun host ->
       Lwt.return @@ "git+ssh://"^user^"@"^host^"/tmp/ezirmin/lead/mempool" 
     | _ -> Lwt.return ""
@@ -44,6 +44,6 @@ let rec start_participant () =
     | `Ok -> write "\n\027[32mITEM ADDED SUCCESSFULLY\n" >>= 
       start_participant
     | _ -> write "\n\027[31mFAILED TO ADD ITEM\n" >>= 
-  start_participant;;
+      start_participant;;
 
 run @@ start_participant ();;
