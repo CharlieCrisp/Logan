@@ -3,4 +3,4 @@
 (library
  ((name        LogStringCoder)
   (public_name logstringcoder)
-  (libraries (ezjsonm core_extended))))
+  (libraries (ezjsonm core_extended participant))))

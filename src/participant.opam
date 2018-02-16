@@ -1,0 +1,8 @@
+opam-version: "1.2"
+version: "1.0"
+maintainer: "cc839@cam.ac.uk"
+authors: ["Charlie Crisp"]
+license: "Apache-2.0"
+build: [
+  ["jbuilder" "build" "--only" "participant" "--root" "." "-j" jobs "@install"]
+]
