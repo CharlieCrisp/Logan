@@ -6,7 +6,7 @@ OPAM_DEPENDS="ocamlfind ounit re jbuilder lwt core_extended"
 	 
 echo "yes" | sudo add-apt-repository ppa:avsm/ppa
 sudo apt-get update -qq
-sudo apt-get install -qq ocaml ocaml-native-compilers camlp4-extra opam m4 zlib1g-dev libgmp-dev
+sudo apt-get install -qq ocaml ocaml-native-compilers camlp4-extra opam m4 zlib1g-dev libgmp-dev bash-completion
 
 export OPAMYES=1
 opam init 
@@ -16,12 +16,6 @@ eval `opam config env`
 if [ ! -f ~/.bash_profile ]; then
     echo "eval `opam config env`" > ~/.bash_profile
 fi
-
-cd src/
-git clone https://github.com/kayceesrk/ezirmin.git
-cd ezirmin
-opam pin add ezirmin .
-opam reinstall ezirmin
 
 echo -e "${PURPLE}Starting Compilation${NC}"
 make
