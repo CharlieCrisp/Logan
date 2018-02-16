@@ -17,6 +17,9 @@ module Leader (Rem: Remotes) : I_Leader = struct
   let local_mempool_master_branch = run (IrminLog.init ~root: "/tmp/ezirminl/part/mempool" ~bare:true () >>= IrminLog.master)
   let remotes = List.map (fun str -> IrminLog.Sync.remote_uri str) Rem.remotes
 
+  let add_value_to_blockchain value = IrminLog.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path value
+  let add_list_to_blockchain list = Lwt_list.iter_s add_value_to_blockchain list 
+
   let rec get_with_cursor mem_cursor block_cursor item_acc= 
     Lwt.return @@ IrminLog.is_earlier block_cursor ~than:mem_cursor >>= function
       | Some(true) -> IrminLog.read ~num_items:1 mem_cursor >>= (function 
@@ -73,8 +76,6 @@ module Leader (Rem: Remotes) : I_Leader = struct
   let interrupted_mvar = Lwt_mvar.create_empty()
 
   let rec run_leader () = 
-    let add_value_to_blockchain value = IrminLog.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path value in
-    let add_list_to_blockchain list = Lwt_list.iter_s add_value_to_blockchain list in
     match !interrupted_bool with
     | true -> Lwt_mvar.put interrupted_mvar true >>= fun _ -> Lwt.return ()
     | false -> (
