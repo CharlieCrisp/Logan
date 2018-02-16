@@ -4,11 +4,11 @@ module type Remotes = sig
   val remotes: string list
 end
 
-module type LeaderInterface = sig
+module type I_Leader = sig
   val start_leader: unit -> unit Lwt.t
 end
 
-module Leader (Rem: Remotes) : LeaderInterface = struct
+module Leader (Rem: Remotes) : I_Leader = struct
   module IrminLog = Ezirmin.FS_log(Tc.String)
   let run = Lwt_main.run
   let path = []
