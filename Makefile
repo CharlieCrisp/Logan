@@ -8,10 +8,6 @@ lead:
 part:
 	_build/default/src/Examples/ParticipantDemo.exe
 
-part_man:
-	jbuilder build src/Exmaples/ManualParticipantDemo.exe
-	_build/default/src/Examples/ManualParticipantDemo.exe
-
 tester:
 	_build/default/src/Tests/test_single_machine_speed.exe
 
