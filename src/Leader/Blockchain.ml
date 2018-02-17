@@ -1,5 +1,8 @@
 open Lwt.Infix
 
+let write value = Lwt_io.write Lwt_io.stdout value
+let read () = Lwt_io.read_line Lwt_io.stdin 
+
 module type Remotes = sig 
   val remotes: string list
 end
@@ -100,9 +103,15 @@ module Leader (Rem: Remotes) : I_Leader = struct
     ()
 
   let start_leader () = let add_genesis_to_mempool () = (let message = "Genesis Commit" in 
-  IrminLog.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:path message) in
+    IrminLog.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:path message) in
+    register_handlers();  
     add_genesis_to_mempool() >>= fun _ ->
-    register_handlers();
+    get_new_updates() >>= (function 
+      | [] -> Lwt.return ()
+      | updates -> add_list_to_blockchain updates) >>= fun _ ->
+    print_list() >>= fun _ ->
+    write "\027[95m\nBlockchain initialised. Press any key to start the leader: \027[95m" >>= fun _ ->
+    read() >>= fun _ ->
     run_leader()
 end;;
   
