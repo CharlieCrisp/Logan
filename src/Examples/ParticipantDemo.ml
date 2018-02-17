@@ -1,31 +1,35 @@
+(*
+This program demonstrates the capabilities of the Participant Module.
+Run the executable with `-r remote` to connect to a remote leader
+E.g. PartcipantDemo.exe -r leader@0.0.0.0 
+*)
+
 open Lwt.Infix
 
 let run = Lwt_main.run
+let is_local = ref true
+let remote_uri = ref ""
+
 let write value = Lwt_io.write Lwt_io.stdout value;;
 let read () = Lwt_io.read_line Lwt_io.stdin ;;
 
 let get_id () = write "\n\027[93mWhat is your current ID: \027[39m" >>= fun _ ->
   read()
-let get_is_local () = write "\027[93mIs your destination log local or remote (l/r): \027[39m" >>= fun _ ->
-  read () >>= function
-    | "l" -> Lwt.return true
-    | _ -> Lwt.return false
-let try_get_remote_repo is_local = match is_local with
-    | false -> write "\027[93mDestination Username: \027[39m" >>= fun _ ->
-      read() >>= fun user ->
-      write "\027[93mDestination Hostname: \027[39m" >>= fun _ ->
-      read() >>= fun host ->
-      Lwt.return @@ "git+ssh://"^user^"@"^host^"/tmp/ezirmin/lead/mempool" 
-    | _ -> Lwt.return ""
 
+let parse_is_local str = 
+  let address = Printf.sprintf "git+ssh://%s/tmp/ezirminl/lead/mempool" str in
+  is_local := false;
+  remote_uri := address;
+  Printf.printf "\n\027[93mUsing leader address:\027[39m %s\n%!" address
+
+let remote_tuple = ("-r", Arg.String parse_is_local, "Specify the remote repository in the form user@host");;
+let _ = Arg.parse [remote_tuple] (fun _ -> ()) ""
 
 let current_id = run @@ get_id()
-let is_local = run @@ get_is_local()
-let remote_uri = run @@ try_get_remote_repo is_local
 
 module Config: Participant.I_ParticipantConfig = struct
-  let is_local = is_local
-  let leader_uri = remote_uri
+  let is_local = !is_local
+  let leader_uri = !remote_uri
 end
 
 module Part = Participant.Make(Config)(LogStringCoder.BookLogStringCoder)
