@@ -10,13 +10,20 @@ To build the project, navigate to the root of the repository and type...
 ```bash
 make
 ```
-...to run the leader, type...
+...and to rebuild the project, type...
 ```bash
-make lead
+make flush
 ```
-...and to run a participant type...
+
+## Running the example
+In the `/Examples` directory, is a sample program which will run a blockchain leader. The executable takes a list of remote addresses on the the command line, of the form `user@host`. The leader will then pull and merge any updates made on these 'workers'. A typical command would be...
 ```bash
-make part
+_build/default/src/Examples/LeaderDemo.exe user1@host1 user2@host2
+```
+
+There is also a corresponding demo to run the workers. The program accepts the location of the leader on the command line. For example...
+```bash
+_build/default/src/Examples/ParticipantDemo.exe -r leaderuser@leaderhost
 ```
 
 ## Setup scripts
