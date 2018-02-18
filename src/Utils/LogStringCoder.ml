@@ -1,4 +1,4 @@
-module BookLogStringCoder: Participant.I_LogStringCoder with type t = string * string * string = struct
+module BookLogStringCoder: Blockchain.Participant.I_LogStringCoder with type t = string * string * string = struct
   open Core_extended.Std
   type t = string * string * string 
 

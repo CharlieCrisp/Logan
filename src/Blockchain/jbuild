@@ -3,5 +3,6 @@
 (library
  ((name         Blockchain)
   (public_name  blockchain)
+  (modules (Leader Participant))
   (libraries (lwt.unix ezirmin tc lwt core ezjsonm core_extended))))
 

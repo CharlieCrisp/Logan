@@ -1,6 +1,0 @@
-(jbuild_version 1)
-
-(library
- ((name Participant)
-  (public_name participant)
-  (libraries (lwt.unix ezirmin tc lwt ezjsonm core_extended))))
