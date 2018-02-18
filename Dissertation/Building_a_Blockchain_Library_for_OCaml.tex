@@ -106,34 +106,47 @@
 	\pagestyle{headings}
 	
 	\chapter{Introduction}
-
-	\section{The Blockchain}
+	Blockchain technology has existed for a long time, but the definition of 'blockchain' has changed drastically since its conception.
+	Previously used just to describe a data structure, the term 'blockchain' is now widely used to also describe the accompanying consensus mechanisms.
+	This is mainly due to the increasing popularity of cryptocurrencies such as Bitcoin \cite{Bitcoin} which use the 'Proof of Work' algorithm to solve the double spending problem \cite{}.
+	However, whilst blockchain is undoubtably the most important technology in the field of cryptocurrencies, where no single client can be trusted, it also has many uses outside this application.
+	It can be used in other situations where clients can be trusted, for instance, a hospital maintaining medical records, or a bank wishing to record transactions from many of its own distributed clients.\\
 	
-	The blockchain, in its simplest form, is a series of blocks of data, where each block contains the cryptographic hash of the previous block in the chain. The chain is allowed to exhibit arbitrary branching, although in most applications, branches which are significantly shorter than the longest branch are disregarded as being incorrect. Figure \ref{fig:mainblockchain} is a graphical representation of a typical blockchain data structure.\\
-	\\
-	The significance of blocks containing the hash of the previous block, is that if a change were to be made to a previous block, it would change the hashes of all subsequent blocks in the chain. This means that once a block is committed to the blockchain, it cannot be modified, without changing the entire history of the blockchain from that moment onwards.
+
+	I have implemented a blockchain library in OCaml which allows the easy creation of blockchain applications.
+	The blockchain is synchronised via a leader-based consensus mechanism with eventual consistency.
+	Because the application is written in OCaml, it can be compiled to bytecode, unikernels or even javascript and is therefore suitable for a wide range of destination applications and devices.
+
+	\section{The History of the Blockchain}
+	The blockchain, in its simplest form, is a series of blocks of data, where each block contains the cryptographic hash of the previous block in the chain. 
+	Figure \ref{fig:mainblockchain} is a graphical representation of a typical blockchain data structure.
 	\begin{figure}
 		\includegraphics[width=\linewidth]{figs/blockchain}
 		\caption{A typical blockchain structure}
 		\label{fig:mainblockchain}
 	\end{figure}
-	
-	\section{The History of the Blockchain}
 	The blockchain, as a cryptographically secure chain of blocks, was first conceptualised by Stuart Haber and W. Scott Stornetta in 1990 \cite{HaberStornetta}.
-	However, until the creation of Git \cite{Git} in 2005, the blockchain was still a relatively niche concept.\\
-	Git uses the blockchain as a basis for storing a secure history of code in the form of commits made to branches.
-	We will explore the use of the Git as a blockchain during the Implementation chapter.\\
-	\\
-	The invention of Bitcoin \cite{Bitcoin} in 2008 is seen by many as the most pivotal moment in the history of blockchain technologies.
-	Bitcoin combines the blockchain with a 'Proof of Work' consensus algorithm and the result of this is a decentralised, trust-less, peer to peer network which doesn't suffer from the double spending problem.
+	However, until the creation of Git \cite{Git} in 2005, the blockchain was still a relatively niche concept.
+	The invention of Bitcoin in 2008 is seen by many as the most pivotal moment in the history of blockchain technologies.
+	Bitcoin uses the Proof of Work consensus algorithm to create a decentralised, trust-less, peer to peer network which is used to make transactions between virtual wallets.
+
 	\section{Blockchain Today}
-	At the time of writing, cryptocurrencies are generating a huge amount of excitement and cynicism in technology and economics communities. The value of Bitcoin is fluctuating on a day-by-day basis and many alternative currencies are gaining in popularity.\\
-	For example, Ethereum is a blockchain platform that allows participants to run arbitrary\footnote{Whilst there are restrictions to code run on the blockchain (e.g. it has to be deterministic), the Ethereum language 'Solidity' is Turing complete.} code on the blockchain. These are known as Smart Contracts.\\
-	\\
-	However, whilst it is possible to think of applications for blockchain technology in almost every sector, the development of applications outside the scope of crytocurrencies has been limited. 
-	The reason for this is still very much open to debate and the subject of a lot of controversy, however, one argument is that it can be hard for developers to build applications that leverage the power of the blockchain as there are few services or libraries to help with this.\\
-	\\
-	If one considers the example of OCaml, there are no libraries which allow a user to easily get started with building blockchain applications. The aim of this project 
+	At the time of writing, cryptocurrencies are generating both a huge amount of excitement and cynicism in popular media. 
+	Cryptocurrencies aside from Bitcoin are paving the way to smarter uses of the blockchain.
+	For example, Ethereum \cite{Ethereum} introduces the concept of Smart Contracts which allow the execution of code on the blockchain.\\
+	
+	Whilst it is possible to think of applications for blockchain technology in almost every sector, the development of applications outside the scope of crytocurrencies has been limited. 
+	If one considers the example of OCaml, there are currently no libraries which allow a user to easily get started with building blockchain applications. \\
+
+	\section{Work Completed}
+	I have created a library which allows developers to create blockchain applications with the ease of importing a library.
+	The project was designed to exist outside the realm of cryptocurrencies and therefore assumes that all participating nodes are trustworthy.
+	Consensus is achieved by using a simple leader-based model where the leader node will periodically pull updates from all participating nodes and merge them into a central blockchain.
+	This can then be viewed by all participating nodes, with the guarantee of eventual consistency.
+	Setting up a network is as easy as specifying the location of the leader on all the participating nodes, and specifying the location of all participating nodes on the leader.\\
+	
+	I have evaluated the project by... FILL IN EVALUATION DETAILS
+
 	\chapter{Preparation}
 	\section{Starting Point}
 		The project built upon functionality provided by Irmin [1] which is a distributed database system.  Irmin is fast, durable and has the branching capabilities which are required to build a blockchain.\\
