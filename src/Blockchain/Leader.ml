@@ -3,7 +3,7 @@ open Lwt.Infix
 let write value = Lwt_io.write Lwt_io.stdout value
 let read () = Lwt_io.read_line Lwt_io.stdin 
 
-module type Remotes = sig 
+module type I_Remotes = sig 
   val remotes: string list
 end
 
@@ -11,7 +11,7 @@ module type I_Leader = sig
   val start_leader: unit -> unit Lwt.t
 end
 
-module Leader (Rem: Remotes) : I_Leader = struct
+module Make (Rem: I_Remotes) : I_Leader = struct
   module IrminLog = Ezirmin.FS_log(Tc.String)
   let run = Lwt_main.run
   let path = []
