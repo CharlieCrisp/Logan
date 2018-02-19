@@ -7,7 +7,6 @@ module type I_Config = sig
   type t 
   module LogCoder: Participant.I_LogStringCoder with type t = t
   val remotes: string list
-  val is_validated: bool
   val validator: (t list -> t list -> t list) option
 end
 
@@ -114,16 +113,14 @@ module Make (Config: I_Config) : I_Leader = struct
           Lwt_unix.sleep 1.0 >>= fun _ ->
           run_leader ()
         ) in
-        match Config.is_validated with 
-        | true -> (match Config.validator with 
+        match Config.validator with 
           | Some(f) -> 
             let decoded_updates = flat_map (List.map Config.LogCoder.decode_string all_updates) in
             get_all_transactions_from_blockchain() >>= fun blockchain ->
             let new_updates = f blockchain decoded_updates in
             let new_string_updates = List.map (Config.LogCoder.encode_string) new_updates in 
             perform_update new_string_updates
-          | None -> raise Validator_Not_Supplied)
-        | false -> perform_update all_updates))
+          | None -> perform_update all_updates))
   
   let fail_nicely str = interrupted_bool := true;
     run (Lwt_mvar.take interrupted_mvar >>= fun _ -> 
