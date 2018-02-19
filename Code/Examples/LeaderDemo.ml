@@ -3,6 +3,9 @@ let format_remote str = let value = Printf.sprintf "git+ssh://%s/tmp/ezirminl/pa
 
 let remotes = List.map format_remote (List.tl (Array.to_list Sys.argv))
 
+(*The following function can be used to demonstrate a validation mechanism*)
+(* let fil a b = List.filter (function |("charlie", _,_) -> true | _ -> false) b  *)
+
 module Config : Blockchain.I_LeaderConfig with type t = string * string * string = struct 
   type t = string * string * string
   module LogCoder = LogStringCoder.BookLogStringCoder
