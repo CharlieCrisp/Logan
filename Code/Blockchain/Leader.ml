@@ -23,6 +23,7 @@ module Make (Config: I_Config) : I_Leader = struct
   let mempool_master_branch = run (IrminLog.init ~root: "/tmp/ezirminl/lead/mempool" ~bare:true () >>= IrminLog.master)
   let local_mempool_master_branch = run (IrminLog.init ~root: "/tmp/ezirminl/part/mempool" ~bare:true () >>= IrminLog.master)
   let remotes = List.map (fun str -> IrminLog.Sync.remote_uri str) Config.remotes
+  exception Validator_Not_Supplied
 
   let add_value_to_blockchain value = IrminLog.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path value
   let add_list_to_blockchain list = Lwt_list.iter_s add_value_to_blockchain list 
@@ -82,6 +83,13 @@ module Make (Config: I_Config) : I_Leader = struct
   let interrupted_bool = ref false
   let interrupted_mvar = Lwt_mvar.create_empty()
 
+  let get_all_transactions_from_blockchain () = 
+    IrminLog.get_cursor blockchain_master_branch [] >>= function 
+      | Some(cursor) -> IrminLog.read_all blockchain_master_branch [] >>= (function encoded_list ->
+        let list = (List.map (Config.LogCoder.decode_string) encoded_list) in 
+        Lwt.return list)
+      | _ -> Lwt.return []
+
   let rec run_leader () = 
     match !interrupted_bool with
     | true -> Lwt_mvar.put interrupted_mvar true >>= fun _ -> Lwt.return ()
@@ -90,12 +98,24 @@ module Make (Config: I_Config) : I_Leader = struct
       update_mempool() >>= fun _ ->
       get_new_updates() >>= function
       | [] -> Lwt_unix.sleep 1.0 >>= fun _ ->
-          run_leader ()
-      | updates -> add_list_to_blockchain updates >>= fun _ ->
+        run_leader ()
+      | all_updates -> ( let perform_update updates = (
+          add_list_to_blockchain updates >>= fun _ ->
           Lwt.return @@ Printf.printf "\027[95mFound New Updates:\027[39m\n%! " >>= fun _ ->
           print_list() >>= fun _ ->
           Lwt_unix.sleep 1.0 >>= fun _ ->
-          run_leader ())
+          run_leader ()
+        ) in
+        match Config.is_validated with 
+        | true -> (match Config.validator with 
+          | Some(f) -> 
+            let decoded_updates = List.map (Config.LogCoder.decode_string) all_updates in 
+            get_all_transactions_from_blockchain() >>= fun blockchain ->
+            let new_updates = f blockchain decoded_updates in
+            let new_string_updates = List.map (Config.LogCoder.encode_string) new_updates in 
+            perform_update new_string_updates
+          | None -> raise Validator_Not_Supplied)
+        | false -> perform_update all_updates))
   
   let fail_nicely str = interrupted_bool := true;
     run (Lwt_mvar.take interrupted_mvar >>= fun _ -> 
