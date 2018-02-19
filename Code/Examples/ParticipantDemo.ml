@@ -17,10 +17,9 @@ let get_id () = write "\n\027[93mWhat is your current ID: \027[39m" >>= fun _ ->
   read()
 
 let parse_is_local str = 
-  let address = Printf.sprintf "git+ssh://%s/tmp/ezirminl/lead/mempool" str in
   is_local := false;
-  remote_uri := address;
-  Printf.printf "\n\027[93mUsing leader address:\027[39m %s\n%!" address
+  remote_uri := str;
+  Printf.printf "\n\027[93mUsing leader address:\027[39m %s\n%!" str
 
 let remote_tuple = ("-r", Arg.String parse_is_local, "Specify the remote repository in the form user@host");;
 let _ = Arg.parse [remote_tuple] (fun _ -> ()) ""
