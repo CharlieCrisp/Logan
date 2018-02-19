@@ -3,9 +3,9 @@ let format_remote str = let value = Printf.sprintf "git+ssh://%s/tmp/ezirminl/pa
 
 let remotes = List.map format_remote (List.tl (Array.to_list Sys.argv))
 
-module Remote : Blockchain.I_LeaderRemotes = struct
+module Config : Blockchain.I_LeaderConfig = struct
   let remotes = remotes
 end
 
-module Leader = Blockchain.MakeLeader(Remote);;
+module Leader = Blockchain.MakeLeader(Config);;
 Lwt_main.run @@ Leader.start_leader();;

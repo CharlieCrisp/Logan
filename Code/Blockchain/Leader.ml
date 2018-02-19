@@ -3,7 +3,8 @@ open Lwt.Infix
 let write value = Lwt_io.write Lwt_io.stdout value
 let read () = Lwt_io.read_line Lwt_io.stdin 
 
-module type I_Remotes = sig 
+module type I_Config = sig 
+
   val remotes: string list
 end
 
@@ -11,14 +12,14 @@ module type I_Leader = sig
   val start_leader: unit -> unit Lwt.t
 end
 
-module Make (Rem: I_Remotes) : I_Leader = struct
+module Make (Config: I_Config) : I_Leader = struct
   module IrminLog = Ezirmin.FS_log(Tc.String)
   let run = Lwt_main.run
   let path = []
   let blockchain_master_branch = run (IrminLog.init ~root: "/tmp/ezirminl/lead/blockchain" ~bare:true () >>= IrminLog.master)
   let mempool_master_branch = run (IrminLog.init ~root: "/tmp/ezirminl/lead/mempool" ~bare:true () >>= IrminLog.master)
   let local_mempool_master_branch = run (IrminLog.init ~root: "/tmp/ezirminl/part/mempool" ~bare:true () >>= IrminLog.master)
-  let remotes = List.map (fun str -> IrminLog.Sync.remote_uri str) Rem.remotes
+  let remotes = List.map (fun str -> IrminLog.Sync.remote_uri str) Config.remotes
 
   let add_value_to_blockchain value = IrminLog.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path value
   let add_list_to_blockchain list = Lwt_list.iter_s add_value_to_blockchain list 

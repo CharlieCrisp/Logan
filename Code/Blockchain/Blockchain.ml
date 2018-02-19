@@ -1,4 +1,4 @@
-module type I_LeaderRemotes = Leader.I_Remotes
+module type I_LeaderConfig = Leader.I_Config
 module MakeLeader = Leader.Make
 module type I_ParticipantConfig = Participant.I_ParticipantConfig
 module MakeParticipant = Participant.Make
