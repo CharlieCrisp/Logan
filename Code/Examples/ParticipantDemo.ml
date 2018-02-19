@@ -26,12 +26,16 @@ let _ = Arg.parse [remote_tuple] (fun _ -> ()) ""
 
 let current_id = run @@ get_id()
 
-module Config: Blockchain.I_ParticipantConfig = struct
+module Config: Blockchain.I_ParticipantConfig with type t = string * string * string = struct
+  type t = string * string * string
+  module LogCoder = LogStringCoder.BookLogStringCoder
   let is_local = !is_local
   let leader_uri = !remote_uri
+  let is_validated = false
+  let try_validate = None
 end
 
-module Part = Blockchain.MakeParticipant(Config)(LogStringCoder.BookLogStringCoder)
+module Part = Blockchain.MakeParticipant(Config)
 
 let get_log_entry_tuple () = 
   write "\n\027[39mTheir ID (receiver): \027[39m" >>= fun _ ->
