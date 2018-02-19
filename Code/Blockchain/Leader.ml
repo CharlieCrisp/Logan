@@ -4,8 +4,11 @@ let write value = Lwt_io.write Lwt_io.stdout value
 let read () = Lwt_io.read_line Lwt_io.stdin 
 
 module type I_Config = sig 
-
+  type t 
+  module LogCoder: Participant.I_LogStringCoder with type t = t
   val remotes: string list
+  val is_validated: bool
+  val validator: (t list -> t list -> t list) option
 end
 
 module type I_Leader = sig
