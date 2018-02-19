@@ -7,7 +7,7 @@ module Config : Blockchain.I_LeaderConfig with type t = string * string * string
   type t = string * string * string
   module LogCoder = LogStringCoder.BookLogStringCoder
   let remotes = remotes
-  let is_validated = false
+  let is_validated = false 
   let validator = None
 end
 

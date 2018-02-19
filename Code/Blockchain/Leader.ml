@@ -28,6 +28,11 @@ module Make (Config: I_Config) : I_Leader = struct
   let add_value_to_blockchain value = IrminLog.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path value
   let add_list_to_blockchain list = Lwt_list.iter_s add_value_to_blockchain list 
 
+  let rec flat_map = function 
+  | [] -> []
+  | (Some(x)::xs) -> (x::(flat_map xs))
+  | (None::xs) -> flat_map xs
+
   let rec get_with_cursor mem_cursor block_cursor item_acc= 
     Lwt.return @@ IrminLog.is_earlier block_cursor ~than:mem_cursor >>= function
       | Some(true) -> IrminLog.read ~num_items:1 mem_cursor >>= (function 
@@ -87,7 +92,7 @@ module Make (Config: I_Config) : I_Leader = struct
     IrminLog.get_cursor blockchain_master_branch [] >>= function 
       | Some(cursor) -> IrminLog.read_all blockchain_master_branch [] >>= (function encoded_list ->
         let list = (List.map (Config.LogCoder.decode_string) encoded_list) in 
-        Lwt.return list)
+        Lwt.return (flat_map list))
       | _ -> Lwt.return []
 
   let rec run_leader () = 
@@ -109,7 +114,7 @@ module Make (Config: I_Config) : I_Leader = struct
         match Config.is_validated with 
         | true -> (match Config.validator with 
           | Some(f) -> 
-            let decoded_updates = List.map (Config.LogCoder.decode_string) all_updates in 
+            let decoded_updates = flat_map (List.map Config.LogCoder.decode_string all_updates) in
             get_all_transactions_from_blockchain() >>= fun blockchain ->
             let new_updates = f blockchain decoded_updates in
             let new_string_updates = List.map (Config.LogCoder.encode_string) new_updates in 

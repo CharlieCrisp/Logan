@@ -3,7 +3,7 @@ open Lwt.Infix
 module type I_LogStringCoder = sig
   type t
   val encode_string: t -> string
-  val decode_string: string -> t
+  val decode_string: string -> t option
 end
 
 module type I_ParticipantConfig = sig
@@ -31,12 +31,17 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
   let remote_mem = IrminLog.Sync.remote_uri (Printf.sprintf "git+ssh://%s/tmp/ezirminl/lead/mempool" Config.leader_uri)
   let remote_block = IrminLog.Sync.remote_uri (Printf.sprintf "git+ssh://%s/tmp/ezirminl/lead/blockchain" Config.leader_uri)
 
+  let rec flat_map = function 
+    | [] -> []
+    | (Some(x)::xs) -> (x::(flat_map xs))
+    | (None::xs) -> flat_map xs
+
   let get_all_transactions_from_blockchain () = 
     IrminLog.Sync.pull remote_block blockchain_master_branch `Update >>= fun _ ->
     IrminLog.get_cursor blockchain_master_branch [] >>= function 
       | Some(cursor) -> IrminLog.read_all blockchain_master_branch [] >>= (function encoded_list ->
         let list = (List.map (Config.LogCoder.decode_string) encoded_list) in 
-        Lwt.return @@ `Ok list)
+        Lwt.return @@ `Ok (flat_map list))
       | _ -> Lwt.return `Error
 
   let get_transactions_from_blockchain n = 
@@ -44,7 +49,7 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
     IrminLog.get_cursor blockchain_master_branch [] >>= function 
       | Some(cursor) -> IrminLog.read cursor n >>= (function
         | (encoded_list, _) -> let list = (List.map (Config.LogCoder.decode_string) encoded_list) in 
-          Lwt.return @@ `Ok list)
+          Lwt.return @@ `Ok (flat_map list))
       | _ -> Lwt.return `Error
   
   (*This function will not attempt to validate any transaction*)
