@@ -13,6 +13,7 @@ end
 module type I_LogStringCoder = sig
   type t
   val encode_string: t -> string
+  val decode_string: string -> t
 end
 
 module Make(Config: I_ParticipantConfig)(LogCoder: I_LogStringCoder): I_Participant with type t = LogCoder.t = struct 

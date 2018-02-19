@@ -20,4 +20,14 @@ module BookLogStringCoder: Blockchain.I_LogStringCoder with type t = string * st
   let encode_string (value:t) = 
     let json = build_json value
     in Ezjsonm.to_string json
+
+  let rec get_value (dict:(string * Ezjsonm.value) list) desired_key = match dict with 
+    | [] -> ""
+    | ((key, `String v)::_) when key = desired_key -> v
+    | (_::xs) -> get_value xs desired_key
+
+  let decode_string str = 
+    let json = Ezjsonm.from_string str in
+    let dict = Ezjsonm.get_dict json in
+    ((get_value dict "sender_id", get_value dict "receiver_id", get_value dict "book_id"):t)
 end
