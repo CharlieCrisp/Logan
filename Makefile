@@ -23,3 +23,4 @@ test:
 clean:
 	jbuilder clean
 	rm -rf /tmp/ezirminl
+	rm -rf ./bin
