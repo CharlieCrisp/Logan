@@ -52,9 +52,12 @@ module Make (Config: I_Config) : I_Leader = struct
         | _ -> Lwt.return []
 
   let update_from_remote remote = 
-    IrminLog.Sync.pull remote mempool_master_branch `Merge >>= function
-    | `Ok -> Printf.printf "Successfully pulled from remote"; Lwt.return ()
-    | _ -> Printf.printf "Error while pulling from remote"; Lwt.return ()
+    try 
+      IrminLog.Sync.pull remote mempool_master_branch `Merge >>= function
+      | `Ok -> Printf.printf "Successfully pulled from remote\n%!"; Lwt.return ()
+      | _ -> Printf.printf "Error while pulling from remote\n%!"; Lwt.return ()
+    with 
+     | _ -> Lwt.return ()
 
   let update_from_local_mempool () = 
     let add_value_to_mempool value = IrminLog.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:path value in
