@@ -14,6 +14,26 @@ module type I_Leader = sig
   val start_leader: unit -> unit Lwt.t
 end
 
+module Logger = struct 
+  
+  let error str = 
+    let log = open_out_gen [Open_append] 0o640 "leader.log" in
+    Printf.fprintf log "[ERROR] %s\n" str;
+    close_out log
+
+  let debug str = 
+    let log = open_out "leader.log" in
+    let log = open_out_gen [Open_append] 0o640 "leader.log" in
+    Printf.fprintf log "[DEBUG] %s\n" str;
+    close_out log
+
+  let info str = 
+    let log = open_out "leader.log" in
+    let log = open_out_gen [Open_append] 0o640 "leader.log" in
+    Printf.fprintf log "[INFO] %s\n" str;
+    close_out log
+end
+
 module Make (Config: I_Config) : I_Leader = struct
   module IrminLog = Ezirmin.FS_log(Tc.String)
   let run = Lwt_main.run
@@ -54,8 +74,8 @@ module Make (Config: I_Config) : I_Leader = struct
   let update_from_remote remote = 
     try 
       IrminLog.Sync.pull remote mempool_master_branch `Merge >>= function
-      | `Ok -> Printf.printf "Successfully pulled from remote\n%!"; Lwt.return ()
-      | _ -> Printf.printf "Error while pulling from remote\n%!"; Lwt.return ()
+      | `Ok -> Logger.info "Successfully pulled from remote"; Lwt.return ()
+      | _ -> Logger.info "Error while pulling from remote"; Lwt.return ()
     with 
      | _ -> Lwt.return ()
 
