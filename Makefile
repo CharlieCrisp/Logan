@@ -1,22 +1,25 @@
 all:
 	jbuilder build Code/Examples/LeaderDemo.exe
 	jbuilder build Code/Examples/ParticipantDemo.exe
+	mkdir -p bin
+	mv _build/default/Code/Examples/LeaderDemo.exe bin/lead.exe
+	mv _build/default/Code/Examples/ParticipantDemo.exe bin/part.exe
 
 lead:
-	_build/default/Code/Examples/LeaderDemo.exe
+	jbuilder build Code/Examples/LeaderDemo.exe
+	mkdir -p bin
+	mv _build/default/Code/Examples/LeaderDemo.exe bin/lead.exe
 
 part:
-	_build/default/Code/Examples/ParticipantDemo.exe
+	jbuilder build Code/Examples/ParticipantDemo.exe
+	mkdir -p bin
+	mv _build/default/Code/Examples/ParticipantDemo.exe bin/part.exe
 
-part_man:
-	jbuilder build Code/Examples/ManualParticipantDemo.exe
-	_build/default/Code/Examples/ManualParticipantDemo.exe
+test:
+	jbuilder build Code/Tests/test_single_machine_speed
+	mkdir -p bin
+	mv _build/default/Code/Tests/test_single_machine_speed.exe test_single_machine_speed.exe
 
-tester:
-	_build/default/Code/Tests/test_single_machine_speed.exe
-
-flush:
+clean:
 	jbuilder clean
 	rm -rf /tmp/ezirminl
-	jbuilder build Code/Examples/LeaderDemo.exe
-	jbuilder build Code/Examples/ParticipantDemo.exe

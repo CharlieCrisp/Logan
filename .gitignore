@@ -235,5 +235,6 @@ setup.ml
 *.byte
 *.native
 ezirmin/
+bin/
 
 # End of https://www.gitignore.io/api/latex
