@@ -17,19 +17,17 @@ end
 module Logger = struct 
   
   let error str = 
-    let log = open_out_gen [Open_append] 0o640 "leader.log" in
+    let log = open_out_gen [Open_creat; Open_text; Open_append] 0o640 "blockchain.log" in
     Printf.fprintf log "[ERROR] %s\n" str;
     close_out log
 
   let debug str = 
-    let log = open_out "leader.log" in
-    let log = open_out_gen [Open_append] 0o640 "leader.log" in
+    let log = open_out_gen [Open_creat; Open_text; Open_append] 0o640 "blockchain.log" in
     Printf.fprintf log "[DEBUG] %s\n" str;
     close_out log
 
   let info str = 
-    let log = open_out "leader.log" in
-    let log = open_out_gen [Open_append] 0o640 "leader.log" in
+    let log = open_out_gen [Open_creat; Open_text; Open_append] 0o640 "blockchain.log" in
     Printf.fprintf log "[INFO] %s\n" str;
     close_out log
 end
@@ -45,7 +43,9 @@ module Make (Config: I_Config) : I_Leader = struct
   exception Validator_Not_Supplied
   exception Could_Not_Initialise_Blockchain
 
-  let add_value_to_blockchain value = IrminLog.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path value
+  let add_value_to_blockchain value = 
+    Logger.info (Printf.sprintf "Entry added to blockchain: %s" value);
+    IrminLog.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path value
   let add_list_to_blockchain list = Lwt_list.iter_s add_value_to_blockchain list 
   let mempool_cursor: IrminLog.cursor option ref = ref None
 
@@ -54,7 +54,7 @@ module Make (Config: I_Config) : I_Leader = struct
   | (Some(x)::xs) -> (x::(flat_map xs))
   | (None::xs) -> flat_map xs
 
-  let rec get_with_cursor latest_known new_curs item_acc= 
+  let rec get_with_cursor latest_known new_curs item_acc = 
     Lwt.return @@ IrminLog.is_earlier latest_known ~than:new_curs >>= function
       | Some(true) -> IrminLog.read ~num_items:1 new_curs >>= (function 
         | ([item], Some(new_cursor)) -> get_with_cursor latest_known new_cursor (item::item_acc)
@@ -128,13 +128,13 @@ module Make (Config: I_Config) : I_Leader = struct
       | [] -> Lwt_unix.sleep 1.0 >>= fun _ ->
         run_leader ()
       | all_updates -> (let perform_update updates = (
-          add_list_to_blockchain updates >>= fun _ ->
-          Lwt.return @@ Printf.printf "\027[95mFound New Updates:\027[39m\n%! " >>= fun _ ->
-          print_list() >>= fun _ ->
-          IrminLog.get_cursor mempool_master_branch ~path:path >>= fun new_cursor ->
-          mempool_cursor:= new_cursor;
-          Lwt_unix.sleep 1.0 >>= fun _ ->
-          run_leader ()
+        add_list_to_blockchain updates >>= fun _ ->
+        Lwt.return @@ Printf.printf "\027[95mFound New Updates:\027[39m\n%! " >>= fun _ ->
+        print_list() >>= fun _ ->
+        IrminLog.get_cursor mempool_master_branch ~path:path >>= fun new_cursor ->
+        mempool_cursor:= new_cursor;
+        Lwt_unix.sleep 1.0 >>= fun _ ->
+        run_leader ()
         ) in
         match Config.validator with 
           | Some(f) -> 

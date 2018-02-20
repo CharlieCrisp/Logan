@@ -236,5 +236,6 @@ setup.ml
 *.native
 ezirmin/
 bin/
+blockchain.log
 
 # End of https://www.gitignore.io/api/latex
