@@ -77,7 +77,7 @@ module Make (Config: I_Config) : I_Leader = struct
       | `Ok -> Logger.info "Successfully pulled from remote"; Lwt.return ()
       | _ -> Logger.info "Error while pulling from remote"; Lwt.return ()
     with 
-     | _ -> Lwt.return ()
+     | _ -> Logger.info "Error while pulling from remote"; Lwt.return ()
 
   let update_from_local_mempool () = 
     let add_value_to_mempool value = IrminLog.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:path value in
@@ -171,7 +171,7 @@ module Make (Config: I_Config) : I_Leader = struct
       | [] -> Lwt.return ()
       | updates -> add_list_to_blockchain updates) >>= fun _ ->
     print_list() >>= fun _ ->
-    write "\027[95m\nBlockchain initialised. Press any key to start the leader: \027[95m" >>= fun _ ->
+    write "\027[95m\nBlockchain initialised. Press any key to start the leader: \027[39m" >>= fun _ ->
     read() >>= fun _ ->
     run_leader()
 end;;
