@@ -31,8 +31,7 @@ module Config: Blockchain.I_ParticipantConfig with type t = string * string * st
   module LogCoder = LogStringCoder.BookLogStringCoder
   let is_local = !is_local
   let leader_uri = !remote_uri
-  let is_validated = false
-  let try_validate = None
+  let validator = None
 end
 
 module Part = Blockchain.MakeParticipant(Config)

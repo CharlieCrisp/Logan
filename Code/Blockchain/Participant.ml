@@ -12,8 +12,7 @@ module type I_ParticipantConfig = sig
 
   val is_local: bool
   val leader_uri: string
-  val is_validated: bool
-  val try_validate: (t list -> t -> bool) option
+  val validator: (t list -> t -> bool) option
 end
 
 module type I_Participant = sig 
@@ -66,16 +65,13 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
           | _ -> Lwt.return `Could_Not_Pull_From_Remote)
 
   let add_transaction_to_mempool value =
-    match Config.is_validated with 
-      | true -> (get_all_transactions_from_blockchain() >>= function
-        | `Ok blockchain -> (
-          match Config.try_validate with
-          | Some(f) -> (let should_commit = f blockchain value in
-            match should_commit with 
-            | true -> force_transaction_to_mempool value
-            | false -> Lwt.return `Validation_Failure)
-          | None -> Lwt.return `Validation_Failure)
+    match Config.validator with 
+      | Some(f) -> (get_all_transactions_from_blockchain() >>= function
+        | `Ok blockchain -> (let should_commit = f blockchain value in
+          match should_commit with 
+          | true -> force_transaction_to_mempool value
+          | false -> Lwt.return `Validation_Failure)
         | _ -> Lwt.return `Validation_Failure)
-      | false -> force_transaction_to_mempool value
+      | None -> force_transaction_to_mempool value
 
 end
