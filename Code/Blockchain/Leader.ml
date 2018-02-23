@@ -45,13 +45,14 @@ module Make (Config: I_Config) : I_Leader = struct
   let mempool_master_branch = run @@ IrminLogMem.master mempool_repo
   let local_mempool_master_branch = run @@ IrminLogLocalMem.master mempool_local_repo
   let remotes = List.map (fun str -> IrminLogMem.Sync.remote_uri str) Config.remotes
+  let internal_branch = run @@ IrminLogMem.get_branch mempool_repo "internal"
   exception Validator_Not_Supplied
   exception Could_Not_Initialise_Blockchain
 
-  let pull_mem remote_mem = 
-    IrminLogMem.get_branch mempool_repo "internal" >>= fun ib ->
-    IrminLogMem.Sync.pull remote_mem mempool_master_branch `Merge >>= fun _ ->
-    IrminLogMem.Sync.pull remote_mem ib `Merge
+  let ignore_lwt t = t >|= fun _ -> ()
+
+  let pull_mem remote_mem = Lwt.join [ignore_lwt @@ IrminLogMem.Sync.pull remote_mem internal_branch `Merge;
+    ignore_lwt @@ IrminLogMem.Sync.pull remote_mem mempool_master_branch `Merge]
 
   let add_value_to_blockchain value = 
     Logger.info (Printf.sprintf "Entry added to blockchain: %s" value);
@@ -83,9 +84,7 @@ module Make (Config: I_Config) : I_Leader = struct
 
   let update_from_remote remote = 
     try 
-      pull_mem remote >>= function
-      | `Ok -> Logger.info "Successfully pulled from remote"; Lwt.return ()
-      | _ -> Logger.info "Error while pulling from remote"; Lwt.return ()
+      pull_mem remote >>= fun _ -> Logger.info "Successfully pulled from remote"; Lwt.return ()
     with 
      | _ -> Logger.info "Error while pulling from remote"; Lwt.return ()
 
