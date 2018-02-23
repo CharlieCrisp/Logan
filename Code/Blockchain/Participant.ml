@@ -24,11 +24,12 @@ end
 
 module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t = struct 
   type t = Config.t 
-  module IrminLog = Ezirmin.FS_log(Tc.String)
-  let mempool_master_branch = Lwt_main.run (IrminLog.init ~root:"/tmp/ezirminl/part/mempool" ~bare:true () >>= IrminLog.master)
-  let blockchain_master_branch = Lwt_main.run (IrminLog.init ~root:"/tmp/ezirminl/lead/blockchain" ~bare:true () >>= IrminLog.master)
-  let remote_mem = IrminLog.Sync.remote_uri (Printf.sprintf "git+ssh://%s/tmp/ezirminl/lead/mempool" Config.leader_uri)
-  let remote_block = IrminLog.Sync.remote_uri (Printf.sprintf "git+ssh://%s/tmp/ezirminl/lead/blockchain" Config.leader_uri)
+  module IrminLogMem = Ezirmin.FS_log(Tc.String)
+  module IrminLogBlock = Ezirmin.FS_log(Tc.String)
+  let mempool_master_branch = Lwt_main.run (IrminLogMem.init ~root:"/tmp/ezirminl/part/mempool" ~bare:true () >>= IrminLogMem.master)
+  let blockchain_master_branch = Lwt_main.run (IrminLogBlock.init ~root:"/tmp/ezirminl/lead/blockchain" ~bare:true () >>= IrminLogBlock.master)
+  let remote_mem = IrminLogMem.Sync.remote_uri (Printf.sprintf "git+ssh://%s/tmp/ezirminl/lead/mempool" Config.leader_uri)
+  let remote_block = IrminLogBlock.Sync.remote_uri (Printf.sprintf "git+ssh://%s/tmp/ezirminl/lead/blockchain" Config.leader_uri)
 
   let rec flat_map = function 
     | [] -> []
@@ -36,17 +37,17 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
     | (None::xs) -> flat_map xs
 
   let get_all_transactions_from_blockchain () = 
-    IrminLog.Sync.pull remote_block blockchain_master_branch `Update >>= fun _ ->
-    IrminLog.get_cursor blockchain_master_branch [] >>= function 
-      | Some(cursor) -> IrminLog.read_all blockchain_master_branch [] >>= (function encoded_list ->
+    IrminLogBlock.Sync.pull remote_block blockchain_master_branch `Update >>= fun _ ->
+    IrminLogBlock.get_cursor blockchain_master_branch [] >>= function 
+      | Some(cursor) -> IrminLogBlock.read_all blockchain_master_branch [] >>= (function encoded_list ->
         let list = (List.map (Config.LogCoder.decode_string) encoded_list) in 
         Lwt.return @@ `Ok (flat_map list))
       | _ -> Lwt.return `Error
 
   let get_transactions_from_blockchain n = 
-    IrminLog.Sync.pull remote_block blockchain_master_branch `Update >>= fun _ ->
-    IrminLog.get_cursor blockchain_master_branch [] >>= function 
-      | Some(cursor) -> IrminLog.read cursor n >>= (function
+    IrminLogBlock.Sync.pull remote_block blockchain_master_branch `Update >>= fun _ ->
+    IrminLogBlock.get_cursor blockchain_master_branch [] >>= function 
+      | Some(cursor) -> IrminLogBlock.read cursor n >>= (function
         | (encoded_list, _) -> let list = (List.map (Config.LogCoder.decode_string) encoded_list) in 
           Lwt.return @@ `Ok (flat_map list))
       | _ -> Lwt.return `Error
@@ -54,12 +55,12 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
   (*This function will not attempt to validate any transaction*)
   let force_transaction_to_mempool value =
     let add_local_message_to_mempool message =
-      IrminLog.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:[] message in
+      IrminLogMem.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:[] message in
     let message = Config.LogCoder.encode_string value in 
     match Config.is_local with
       | true -> add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok
       | false -> Lwt.catch 
-        (fun _ -> IrminLog.Sync.pull remote_mem mempool_master_branch `Merge) 
+        (fun _ -> IrminLogMem.Sync.pull remote_mem mempool_master_branch `Merge) 
         (fun _ -> Lwt.return `Error) >>= (function
           | `Ok -> add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok
           | _ -> Lwt.return `Could_Not_Pull_From_Remote)
