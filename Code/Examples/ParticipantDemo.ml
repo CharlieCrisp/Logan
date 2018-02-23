@@ -2,7 +2,6 @@ let reporter ppf =
   let report src level ~over k msgf =
     let k _ = over (); k () in
     let with_stamp h tags k ppf fmt =
-      let stamp = None in
       let dt = 0. in
       Format.kfprintf k ppf ("%a[%0+04.0fus] @[" ^^ fmt ^^ "@]@.")
         Logs.pp_header (level, h) dt

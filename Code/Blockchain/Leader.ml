@@ -33,21 +33,26 @@ module Logger = struct
 end
 
 module Make (Config: I_Config) : I_Leader = struct
-  module IrminLog = Ezirmin.FS_log(Tc.String)
+  module IrminLogMem = Ezirmin.FS_log(Tc.String)
+  module IrminLogBlock = Ezirmin.FS_log(Tc.String)
+  module IrminLogLocalMem = Ezirmin.FS_log(Tc.String)
   let run = Lwt_main.run
   let path = []
-  let blockchain_master_branch = run (IrminLog.init ~root: "/tmp/ezirminl/lead/blockchain" ~bare:true () >>= IrminLog.master)
-  let mempool_master_branch = run (IrminLog.init ~root: "/tmp/ezirminl/lead/mempool" ~bare:true () >>= IrminLog.master)
-  let local_mempool_master_branch = run (IrminLog.init ~root: "/tmp/ezirminl/part/mempool" ~bare:true () >>= IrminLog.master)
-  let remotes = List.map (fun str -> IrminLog.Sync.remote_uri str) Config.remotes
+  let blockchain_repo = run @@ IrminLogBlock.init ~root: "/tmp/ezirminl/lead/blockchain" ~bare:true ()
+  let mempool_repo = run @@ IrminLogMem.init ~root:"/tmp/ezirminl/lead/mempool" ~bare:true ()
+  let mempool_local_repo = run @@ IrminLogLocalMem.init ~root: "/tmp/ezirminl/part/mempool" ~bare:true ()
+  let blockchain_master_branch = run @@ IrminLogBlock.master blockchain_repo
+  let mempool_master_branch = run @@ IrminLogMem.master mempool_repo
+  let local_mempool_master_branch = run @@ IrminLogLocalMem.master mempool_local_repo
+  let remotes = List.map (fun str -> IrminLogMem.Sync.remote_uri str) Config.remotes
   exception Validator_Not_Supplied
   exception Could_Not_Initialise_Blockchain
 
   let add_value_to_blockchain value = 
     Logger.info (Printf.sprintf "Entry added to blockchain: %s" value);
-    IrminLog.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path value
+    IrminLogBlock.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path value
   let add_list_to_blockchain list = Lwt_list.iter_s add_value_to_blockchain list 
-  let mempool_cursor: IrminLog.cursor option ref = ref None
+  let mempool_cursor: IrminLogMem.cursor option ref = ref None
 
   let rec flat_map = function 
   | [] -> []
@@ -55,8 +60,8 @@ module Make (Config: I_Config) : I_Leader = struct
   | (None::xs) -> flat_map xs
 
   let rec get_with_cursor latest_known new_curs item_acc = 
-    Lwt.return @@ IrminLog.is_earlier latest_known ~than:new_curs >>= function
-      | Some(true) -> IrminLog.read ~num_items:1 new_curs >>= (function 
+    Lwt.return @@ IrminLogMem.is_earlier latest_known ~than:new_curs >>= function
+      | Some(true) -> IrminLogMem.read ~num_items:1 new_curs >>= (function 
         | ([item], Some(new_cursor)) -> get_with_cursor latest_known new_cursor (item::item_acc)
         | _ ->Lwt.return item_acc)
       | _ -> Lwt.return item_acc
@@ -64,30 +69,30 @@ module Make (Config: I_Config) : I_Leader = struct
   (*This function gets new updates from the local mempool so they can be added to the blockchain*)
   (*Earliest messages will appear first in resulting list*)
   let get_new_updates () = 
-      IrminLog.get_cursor mempool_master_branch ~path:path >>= fun new_mem_cursor ->
+      IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun new_mem_cursor ->
       match (!mempool_cursor, new_mem_cursor) with
         | (Some(latest_known), Some(new_curs)) -> get_with_cursor latest_known new_curs []
-        | (None, Some(new_curs)) -> IrminLog.read ~num_items: 1 new_curs >>= (function 
+        | (None, Some(new_curs)) -> IrminLogMem.read ~num_items: 1 new_curs >>= (function 
           | (xs, _) -> Lwt.return xs)
         | _ -> Lwt.return []
 
   let update_from_remote remote = 
     try 
-      IrminLog.Sync.pull remote mempool_master_branch `Merge >>= function
+      IrminLogMem.Sync.pull remote mempool_master_branch `Merge >>= function
       | `Ok -> Logger.info "Successfully pulled from remote"; Lwt.return ()
       | _ -> Logger.info "Error while pulling from remote"; Lwt.return ()
     with 
      | _ -> Logger.info "Error while pulling from remote"; Lwt.return ()
 
   let update_from_local_mempool () = 
-    let add_value_to_mempool value = IrminLog.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:path value in
+    let add_value_to_mempool value = IrminLogMem.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:path value in
     let add_list_to_mempool list = Lwt_list.iter_s add_value_to_mempool list in
-    IrminLog.get_cursor mempool_master_branch ~path:path >>= fun leader_mempool ->
-    IrminLog.get_cursor local_mempool_master_branch ~path:path >>= fun part_mempool ->
+    IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun leader_mempool ->
+    IrminLogLocalMem.get_cursor local_mempool_master_branch ~path:path >>= fun part_mempool ->
     match (leader_mempool, part_mempool) with
       | (Some(l_cursor), Some(p_cursor)) -> get_with_cursor l_cursor p_cursor [] >>= fun updates ->
         add_list_to_mempool updates
-      | (None, Some(p_cursor)) -> IrminLog.read ~num_items: 1 p_cursor >>= fun (updates, _) ->
+      | (None, Some(p_cursor)) -> IrminLogMem.read ~num_items: 1 p_cursor >>= fun (updates, _) ->
         add_list_to_mempool updates
       | _ -> Lwt.return ()
 
@@ -101,10 +106,10 @@ module Make (Config: I_Config) : I_Leader = struct
     | [] -> Lwt.return @@ ()
 
   let print_list () = Lwt.return @@ Printf.printf "\n\027[92m-----Start Block-----\027[32m\n" >>= fun _ ->
-    IrminLog.read_all blockchain_master_branch [] >>= fun list ->
+    IrminLogBlock.read_all blockchain_master_branch [] >>= fun list ->
     print_list list >>= fun _ ->
     Lwt.return @@ Printf.printf "\n\027[93m-----Start MemPo-----\027[33m\n" >>= fun _ ->
-    IrminLog.read_all mempool_master_branch [] >>= fun list ->
+    IrminLogMem.read_all mempool_master_branch [] >>= fun list ->
     print_list list >>= fun _ ->
     Lwt.return @@ Printf.printf "\n\027[91m------End MemPo------\027[39m\n\n%!"
    
@@ -112,8 +117,8 @@ module Make (Config: I_Config) : I_Leader = struct
   let interrupted_mvar = Lwt_mvar.create_empty()
 
   let get_all_transactions_from_blockchain () = 
-    IrminLog.get_cursor blockchain_master_branch [] >>= function 
-      | Some(cursor) -> IrminLog.read_all blockchain_master_branch [] >>= (function encoded_list ->
+    IrminLogBlock.get_cursor blockchain_master_branch [] >>= function 
+      | Some(cursor) -> IrminLogBlock.read_all blockchain_master_branch [] >>= (function encoded_list ->
         let list = (List.map (Config.LogCoder.decode_string) encoded_list) in 
         Lwt.return (flat_map list))
       | _ -> Lwt.return []
@@ -131,7 +136,7 @@ module Make (Config: I_Config) : I_Leader = struct
         add_list_to_blockchain updates >>= fun _ ->
         Lwt.return @@ Printf.printf "\027[95mFound New Updates:\027[39m\n%! " >>= fun _ ->
         print_list() >>= fun _ ->
-        IrminLog.get_cursor mempool_master_branch ~path:path >>= fun new_cursor ->
+        IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun new_cursor ->
         mempool_cursor:= new_cursor;
         Lwt_unix.sleep 1.0 >>= fun _ ->
         run_leader ()
@@ -154,10 +159,10 @@ module Make (Config: I_Config) : I_Leader = struct
     let _ = Lwt_unix.on_signal Sys.sigint (fun _ -> fail_nicely "SIGINT") in 
     ()
 
-  let add_genesis_and_update_cursor () = IrminLog.get_cursor mempool_master_branch ~path:path >>= function
-      | None -> IrminLog.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:path "Genesis Commit" >>= fun _ ->
-        IrminLog.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path "Genesis Commit" >>= fun _ ->
-        IrminLog.get_cursor mempool_master_branch ~path:path >>= (function 
+  let add_genesis_and_update_cursor () = IrminLogMem.get_cursor mempool_master_branch ~path:path >>= function
+      | None -> IrminLogMem.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:path "Genesis Commit" >>= fun _ ->
+        IrminLogBlock.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path "Genesis Commit" >>= fun _ ->
+        IrminLogMem.get_cursor mempool_master_branch ~path:path >>= (function 
           | None -> raise Could_Not_Initialise_Blockchain
           | curs -> mempool_cursor := curs;
             Lwt.return ())
