@@ -1,3 +1,20 @@
+let reporter ppf =
+  let report src level ~over k msgf =
+    let k _ = over (); k () in
+    let with_stamp h tags k ppf fmt =
+      let stamp = None in
+      let dt = 0. in
+      Format.kfprintf k ppf ("%a[%0+04.0fus] @[" ^^ fmt ^^ "@]@.")
+        Logs.pp_header (level, h) dt
+    in
+    msgf @@ fun ?header ?tags fmt -> with_stamp header tags k ppf fmt
+  in
+  { Logs.report = report }
+
+let _ = Logs.set_reporter (reporter (Format.std_formatter))
+
+let _ = Logs.set_level ~all:true (Some (Logs.Debug))
+
 (*
 This program demonstrates the capabilities of the Participant Module.
 Run the executable with `-r remote` to connect to a remote leader
