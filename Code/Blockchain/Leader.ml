@@ -101,8 +101,11 @@ module Make (Config: I_Config) : I_Leader = struct
       | _ -> Lwt.return ()
 
   (*This will sequentially merge changes from all the mempools in the known remotes*)
-  let update_mempool () = let rems = Lwt_stream.of_list remotes in 
-    Lwt_stream.iter_s update_from_remote rems
+  let update_mempool () = 
+    let rec update_mempools = function 
+      | x::xs -> update_from_remote x; 
+      | [] -> Lwt.return ()
+    in update_mempools remotes
     
   let rec print_list list = match list with 
     | (x::[]) -> Lwt.return @@ Printf.printf "%s%!" x
