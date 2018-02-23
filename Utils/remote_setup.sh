@@ -2,7 +2,7 @@
 PURPLE='\033[1;35m'
 NC='\033[0m'
 
-OPAM_DEPENDS="ocamlfind ounit re jbuilder lwt ezirmin"
+OPAM_DEPENDS="ocamlfind ounit re jbuilder lwt core"
 	 
 echo "yes" | sudo add-apt-repository ppa:avsm/ppa
 sudo apt-get update -qq
@@ -18,6 +18,8 @@ if [ ! -f ~/.bash_profile ]; then
     echo "eval `opam config env`" > ~/.bash_profile
 fi
 
-echo -e "${PURPLE}Starting Compilation${NC}"
-make
-echo -e "${PURPLE}Completed Compilation${NC}"
+# If ~./inputrc doesn't exist yet, first include the original /etc/inputrc so we don't override it
+if [ ! -a ~/.inputrc ]; then echo '$include /etc/inputrc' > ~/.inputrc; fi
+
+# Add option to ~/.inputrc to enable case-insensitive tab completion
+echo 'set completion-ignore-case On' >> ~/.inputrc
