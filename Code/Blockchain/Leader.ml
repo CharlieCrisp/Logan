@@ -103,7 +103,9 @@ module Make (Config: I_Config) : I_Leader = struct
   (*This will sequentially merge changes from all the mempools in the known remotes*)
   let update_mempool () = 
     let rec update_mempools = function 
-      | (x,str)::xs -> Logger.info (Printf.sprintf "Updating from %s" str); update_from_remote x; 
+      | (x,str)::xs -> Logger.info (Printf.sprintf "Updating from %s" str); 
+        update_from_remote x >>= fun _ ->
+         update_mempools xs;
       | [] -> Lwt.return ()
     in update_mempools remotes
     
