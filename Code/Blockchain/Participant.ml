@@ -40,6 +40,7 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
     IrminLogBlock.Sync.pull remote_block ib `Merge
 
   let pull_mem = 
+    Printf.printf "Pulling from leader";
     IrminLogMem.get_branch mempool_repo "internal" >>= fun ib ->
     IrminLogMem.Sync.pull remote_mem mempool_master_branch `Merge >>= fun _ ->
     IrminLogMem.Sync.pull remote_mem ib `Merge

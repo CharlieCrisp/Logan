@@ -44,7 +44,7 @@ module Make (Config: I_Config) : I_Leader = struct
   let blockchain_master_branch = run @@ IrminLogBlock.master blockchain_repo
   let mempool_master_branch = run @@ IrminLogMem.master mempool_repo
   let local_mempool_master_branch = run @@ IrminLogLocalMem.master mempool_local_repo
-  let remotes = List.map (fun str -> IrminLogMem.Sync.remote_uri str) Config.remotes
+  let remotes = List.map (fun str -> (IrminLogMem.Sync.remote_uri str, str)) Config.remotes
   let internal_branch = run @@ IrminLogMem.get_branch mempool_repo "internal"
   exception Validator_Not_Supplied
   exception Could_Not_Initialise_Blockchain
@@ -84,7 +84,7 @@ module Make (Config: I_Config) : I_Leader = struct
 
   let update_from_remote remote = 
     try 
-      pull_mem remote >>= fun _ -> Logger.info "Successfully pulled from remote"; Lwt.return ()
+      pull_mem remote >>= fun _ -> Lwt.return ()
     with 
      | _ -> Logger.info "Error while pulling from remote"; Lwt.return ()
 
@@ -103,7 +103,7 @@ module Make (Config: I_Config) : I_Leader = struct
   (*This will sequentially merge changes from all the mempools in the known remotes*)
   let update_mempool () = 
     let rec update_mempools = function 
-      | x::xs -> update_from_remote x; 
+      | (x,str)::xs -> Logger.info (Printf.sprintf "Updating from %s" str); update_from_remote x; 
       | [] -> Lwt.return ()
     in update_mempools remotes
     
@@ -177,6 +177,7 @@ module Make (Config: I_Config) : I_Leader = struct
         Lwt.return ()
 
   let start_leader () = 
+    Logger.info "Starting Leader";
     register_handlers();  
     add_genesis_and_update_cursor() >>= fun _ ->
     get_new_updates() >>= (function 
