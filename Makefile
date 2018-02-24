@@ -24,3 +24,4 @@ clean:
 	jbuilder clean
 	rm -rf /tmp/ezirminl
 	rm -rf ./bin
+	rm ./blockchain.log
