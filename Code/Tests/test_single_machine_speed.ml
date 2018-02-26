@@ -1,18 +1,14 @@
 open Lwt.Infix
-module IrminLogMem = Ezirmin.FS_log(Tc.String)
+type transaction = string * string * string
+module Config : Blockchain.I_ParticipantConfig with type t = transaction = struct 
+  type t = transaction
+  module LogCoder = LogStringCoder.BookLogStringCoder
+  let is_local = false
+  let leader_uri = ""
+  let validator = None
+end
 
-let run = Lwt_main.run;;
-let root = "/tmp/ezirminl/part/mempool"
-let mempool_master_branch = Lwt_main.run (IrminLogMem.init ~root:root ~bare:true () >>= IrminLogMem.master)
-let path = []
-
-let add_local_message_to_mempool message =
-  IrminLogMem.clone_force mempool_master_branch "wip" >>= fun wip_branch ->
-  IrminLogMem.append ~message:"Entry added to the blockchain" wip_branch ~path:path message >>= fun _ -> 
-  IrminLogMem.merge wip_branch ~into:mempool_master_branch ;;
-let add_transaction_to_mempool sender_id receiver_id book_id =
-  let message = LogStringCoder.encode_string sender_id receiver_id book_id in 
-    add_local_message_to_mempool message;;
+module Participant = Blockchain.MakeParticipant(Config)
 
 let rec test_blockchain n = 
   let nstr = string_of_int n in
@@ -20,8 +16,8 @@ let rec test_blockchain n =
   let receiver = "receiver: "^nstr in
   let book = "book: "^nstr in
   match n with
-  | 0 -> Lwt.return @@ add_transaction_to_mempool sender receiver book
-  | _ -> add_transaction_to_mempool sender receiver book >>= fun _ ->
+  | 0 -> Lwt.return @@ Participant.add_transaction_to_mempool (sender, receiver, book)
+  | _ -> Participant.add_transaction_to_mempool (sender, receiver, book) >>= fun _ ->
     test_blockchain (n-1);;
 
-run @@ test_blockchain 10;;
+Lwt_main.run @@ test_blockchain 10;;
