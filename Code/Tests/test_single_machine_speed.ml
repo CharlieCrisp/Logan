@@ -1,3 +1,5 @@
+(*bin/lead -r remoteuser@remotehost -i 10*)
+
 open Lwt.Infix
 
 let remote_uri = ref None
