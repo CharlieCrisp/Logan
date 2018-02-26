@@ -9,9 +9,7 @@ end
 module type I_ParticipantConfig = sig
   type t
   module LogCoder: I_LogStringCoder with type t = t
-
-  val is_local: bool
-  val leader_uri: string
+  val leader_uri: string option
   val validator: (t list -> t -> bool) option
 end
 
@@ -30,20 +28,27 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
   let blockchain_repo = Lwt_main.run @@ IrminLogBlock.init ~root:"/tmp/ezirminl/lead/blockchain" ~bare:true ()
   let mempool_master_branch = Lwt_main.run @@ IrminLogMem.master mempool_repo
   let blockchain_master_branch = Lwt_main.run @@ IrminLogBlock.master blockchain_repo
-  let remote_mem = IrminLogMem.Sync.remote_uri (Printf.sprintf "git+ssh://%s/tmp/ezirminl/lead/mempool" Config.leader_uri)
-  let remote_block = IrminLogBlock.Sync.remote_uri (Printf.sprintf "git+ssh://%s/tmp/ezirminl/lead/blockchain" Config.leader_uri)
+  let remote_mem_opt = match Config.leader_uri with 
+    | Some(uri) -> Some(IrminLogMem.Sync.remote_uri (Printf.sprintf "git+ssh://%s/tmp/ezirminl/lead/mempool" uri))
+    | None -> None
+  let remote_block_opt = match Config.leader_uri with 
+    | Some(uri) -> Some(IrminLogBlock.Sync.remote_uri (Printf.sprintf "git+ssh://%s/tmp/ezirminl/lead/blockchain" uri))
+    | None -> None
 
-  
-  let pull_block = 
-    IrminLogBlock.get_branch blockchain_repo "internal" >>= fun ib ->
-    IrminLogBlock.Sync.pull remote_block blockchain_master_branch `Merge >>= fun _ ->
-    IrminLogBlock.Sync.pull remote_block ib `Merge
+  let pull_block = match remote_block_opt with 
+    | Some(remote_block) ->
+      IrminLogBlock.get_branch blockchain_repo "internal" >>= fun ib ->
+      IrminLogBlock.Sync.pull remote_block blockchain_master_branch `Merge >>= fun _ ->
+      IrminLogBlock.Sync.pull remote_block ib `Merge
+    | _ -> Lwt.return `Error
 
-  let pull_mem = 
-    Printf.printf "Pulling from leader";
-    IrminLogMem.get_branch mempool_repo "internal" >>= fun ib ->
-    IrminLogMem.Sync.pull remote_mem mempool_master_branch `Merge >>= fun _ ->
-    IrminLogMem.Sync.pull remote_mem ib `Merge
+  let pull_mem = match remote_mem_opt with
+    | Some(remote_mem) -> 
+      Printf.printf "Pulling from leader";
+      IrminLogMem.get_branch mempool_repo "internal" >>= fun ib ->
+      IrminLogMem.Sync.pull remote_mem mempool_master_branch `Merge >>= fun _ ->
+      IrminLogMem.Sync.pull remote_mem ib `Merge
+    | _ -> Lwt.return `Error
 
   let rec flat_map = function 
     | [] -> []
@@ -71,9 +76,9 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
     let add_local_message_to_mempool message =
       IrminLogMem.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:[] message in
     let message = Config.LogCoder.encode_string value in 
-    match Config.is_local with
-      | true -> add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok
-      | false -> Lwt.catch 
+    match Config.leader_uri with
+      | None -> add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok
+      | _ -> Lwt.catch 
         (fun _ -> pull_mem) 
         (fun _ -> Lwt.return `Error) >>= (function
           | `Ok -> add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok
