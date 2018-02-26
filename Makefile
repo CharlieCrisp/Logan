@@ -16,9 +16,9 @@ part:
 	mv _build/default/Code/Examples/ParticipantDemo.exe bin/part.exe
 
 test:
-	jbuilder build Code/Tests/test_single_machine_speed
+	jbuilder build Code/Tests/test_single_machine_speed.exe
 	mkdir -p bin
-	mv _build/default/Code/Tests/test_single_machine_speed.exe test_single_machine_speed.exe
+	mv _build/default/Code/Tests/test_single_machine_speed.exe bin/test_single_machine_speed.exe
 
 clean:
 	jbuilder clean
