@@ -10,9 +10,9 @@ let parse_is_local str =
 let parse_iterations itr = 
   n := itr
 
+let iterations_tuple = ("-n", Arg.Int parse_iterations, "Specify the number of iterations");;
 let remote_tuple = ("-r", Arg.String parse_is_local, "Specify the remote repository in the form user@host");;
-let iterations_tuple = ("-n", Arg.Int parse_iterations, "Specify the number of iterations")
-let _ = Arg.parse [remote_tuple] (fun _ -> ()) ""
+let _ = Arg.parse [remote_tuple; iterations_tuple] (fun _ -> ()) ""
 
 type transaction = string * string * string
 module Config : Blockchain.I_ParticipantConfig with type t = transaction = struct 
