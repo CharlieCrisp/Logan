@@ -35,15 +35,15 @@ end
 module Make (Config: I_Config) : I_Leader = struct
   module IrminLogMem = Ezirmin.FS_log(Tc.String)
   module IrminLogBlock = Ezirmin.FS_log(Tc.String)
-  module IrminLogLocalMem = Ezirmin.FS_log(Tc.String)
+  module IrminLogPartMem = Ezirmin.FS_log(Tc.String)
   let run = Lwt_main.run
   let path = []
   let blockchain_repo = run @@ IrminLogBlock.init ~root: "/tmp/ezirminl/lead/blockchain" ~bare:true ()
   let mempool_repo = run @@ IrminLogMem.init ~root:"/tmp/ezirminl/lead/mempool" ~bare:true ()
-  let mempool_local_repo = run @@ IrminLogLocalMem.init ~root: "/tmp/ezirminl/part/mempool" ~bare:true ()
+  let mempool_local_repo = run @@ IrminLogPartMem.init ~root: "/tmp/ezirminl/part/mempool" ~bare:true ()
   let blockchain_master_branch = run @@ IrminLogBlock.master blockchain_repo
   let mempool_master_branch = run @@ IrminLogMem.master mempool_repo
-  let local_mempool_master_branch = run @@ IrminLogLocalMem.master mempool_local_repo
+  let part_mempool_master_branch = run @@ IrminLogPartMem.master mempool_local_repo
   let remotes = List.map (fun str -> (IrminLogMem.Sync.remote_uri str, str)) Config.remotes
   let internal_branch = run @@ IrminLogMem.get_branch mempool_repo "internal"
   exception Validator_Not_Supplied
@@ -61,24 +61,24 @@ module Make (Config: I_Config) : I_Leader = struct
   let mempool_cursor: IrminLogMem.cursor option ref = ref None
 
   let rec flat_map = function 
-  | [] -> []
-  | (Some(x)::xs) -> (x::(flat_map xs))
-  | (None::xs) -> flat_map xs
-
-  let rec get_with_cursor latest_known new_curs item_acc = 
-    Lwt.return @@ IrminLogMem.is_earlier latest_known ~than:new_curs >>= function
-      | Some(true) -> IrminLogMem.read ~num_items:1 new_curs >>= (function 
-        | ([item], Some(new_cursor)) -> get_with_cursor latest_known new_cursor (item::item_acc)
-        | _ ->Lwt.return item_acc)
-      | _ -> Lwt.return item_acc
+    | [] -> []
+    | (Some(x)::xs) -> (x::(flat_map xs))
+    | (None::xs) -> flat_map xs
   
-  (*This function gets new updates from the local mempool so they can be added to the blockchain*)
+  (*This function gets new updates from the leaders mempool so they can be added to the blockchain*)
   (*Earliest messages will appear first in resulting list*)
-  let get_new_updates () = 
+  let get_new_mempool_updates () = 
+    let rec get_with_cursor latest_known new_curs item_acc = ( 
+      Printf.printf "9";
+      Lwt.return @@ IrminLogMem.is_earlier latest_known ~than:new_curs >>= function
+        | Some(true) -> IrminLogMem.read ~num_items:1 new_curs >>= (function 
+          | ([item], Some(new_cursor)) -> get_with_cursor latest_known new_cursor (item::item_acc)
+          | _ -> Lwt.return item_acc)
+        | _ -> Lwt.return item_acc) in
       IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun new_mem_cursor ->
       match (!mempool_cursor, new_mem_cursor) with
         | (Some(latest_known), Some(new_curs)) -> get_with_cursor latest_known new_curs []
-        | (None, Some(new_curs)) -> IrminLogMem.read ~num_items: 1 new_curs >>= (function 
+        | (None, Some(new_curs)) -> IrminLogPartMem.read ~num_items: 1 new_curs >>= (function 
           | (xs, _) -> Lwt.return xs)
         | _ -> Lwt.return []
 
@@ -88,11 +88,17 @@ module Make (Config: I_Config) : I_Leader = struct
     with 
      | _ -> Logger.info "Error while pulling from remote"; Lwt.return ()
 
-  let update_from_local_mempool () = 
+  let update_from_part_mempool () = 
+    let rec get_with_cursor latest_known new_curs item_acc = ( 
+      Lwt.return @@ IrminLogMem.is_earlier latest_known ~than:new_curs >>= function
+        | Some(true) -> IrminLogPartMem.read ~num_items:1 new_curs >>= (function 
+          | ([item], Some(new_cursor)) -> get_with_cursor latest_known new_cursor (item::item_acc)
+          | _ -> Lwt.return item_acc)
+        | _ -> Lwt.return item_acc) in
     let add_value_to_mempool value = IrminLogMem.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:path value in
     let add_list_to_mempool list = Lwt_list.iter_s add_value_to_mempool list in
     IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun leader_mempool ->
-    IrminLogLocalMem.get_cursor local_mempool_master_branch ~path:path >>= fun part_mempool ->
+    IrminLogPartMem.get_cursor part_mempool_master_branch ~path:path >>= fun part_mempool ->
     match (leader_mempool, part_mempool) with
       | (Some(l_cursor), Some(p_cursor)) -> get_with_cursor l_cursor p_cursor [] >>= fun updates ->
         add_list_to_mempool updates
@@ -135,18 +141,18 @@ module Make (Config: I_Config) : I_Leader = struct
     match !interrupted_bool with
     | true -> Lwt_mvar.put interrupted_mvar true >>= fun _ -> Lwt.return ()
     | false -> (
-      update_from_local_mempool() >>= fun _ ->
+      update_from_part_mempool() >>= fun _ ->
       update_mempool() >>= fun _ ->
-      get_new_updates() >>= function
+      get_new_mempool_updates() >>= function
       | [] -> Lwt_unix.sleep 1.0 >>= fun _ ->
         run_leader ()
-      | all_updates -> (let perform_update updates = (
+      | all_updates -> (let perform_update updates = (  
         add_list_to_blockchain updates >>= fun _ ->
         Lwt.return @@ Printf.printf "\027[95mFound New Updates:\027[39m\n%! " >>= fun _ ->
         print_list() >>= fun _ ->
         IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun new_cursor ->
         mempool_cursor:= new_cursor;
-        Lwt_unix.sleep 1.0 >>= fun _ ->
+        Lwt_unix.sleep 1.0 >>= fun _ -> 
         run_leader ()
         ) in
         match Config.validator with 
@@ -181,7 +187,7 @@ module Make (Config: I_Config) : I_Leader = struct
     Logger.info "Starting Leader";
     register_handlers();  
     add_genesis_and_update_cursor() >>= fun _ ->
-    get_new_updates() >>= (function 
+    get_new_mempool_updates() >>= (function 
       | [] -> Lwt.return ()
       | updates -> add_list_to_blockchain updates) >>= fun _ ->
     print_list() >>= fun _ ->
