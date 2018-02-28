@@ -69,7 +69,6 @@ module Make (Config: I_Config) : I_Leader = struct
   (*Earliest messages will appear first in resulting list*)
   let get_new_mempool_updates () = 
     let rec get_with_cursor latest_known new_curs item_acc = ( 
-      Printf.printf "9";
       Lwt.return @@ IrminLogMem.is_earlier latest_known ~than:new_curs >>= function
         | Some(true) -> IrminLogMem.read ~num_items:1 new_curs >>= (function 
           | ([item], Some(new_cursor)) -> get_with_cursor latest_known new_cursor (item::item_acc)
