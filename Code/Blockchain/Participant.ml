@@ -74,7 +74,9 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
   (*This function will not attempt to validate any transaction*)
   let force_transaction_to_mempool value =
     let add_local_message_to_mempool message =
-      IrminLogMem.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:[] message in
+      IrminLogMem.clone_force mempool_master_branch "wip" >>= fun wip_branch ->
+      IrminLogMem.append ~message:"Entry added to the blockchain" wip_branch ~path:[] message >>= fun _ ->
+      IrminLogMem.merge wip_branch ~into:mempool_master_branch in
     let message = Config.LogCoder.encode_string value in 
     match Config.leader_uri with
       | None -> add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok
