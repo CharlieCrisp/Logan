@@ -121,7 +121,7 @@ module Make (Config: I_Config) : I_Leader = struct
       | [] -> Lwt.return ()
     in update_mempools remotes
     
-  let rec print_list list = match list with 
+  (* let rec print_list list = match list with 
     | (x::[]) -> Lwt.return @@ Printf.printf "%s%!" x
     | (x::xs) -> Lwt.return @@ Printf.printf "%s\n%!" x >>= fun _ -> print_list xs
     | [] -> Lwt.return @@ ()
@@ -132,7 +132,7 @@ module Make (Config: I_Config) : I_Leader = struct
     Lwt.return @@ Printf.printf "\n\027[93m-----Start MemPo-----\027[33m\n" >>= fun _ ->
     IrminLogMem.read_all mempool_master_branch [] >>= fun list ->
     print_list list >>= fun _ ->
-    Lwt.return @@ Printf.printf "\n\027[91m------End MemPo------\027[39m\n\n%!"
+    Lwt.return @@ Printf.printf "\n\027[91m------End MemPo------\027[39m\n\n%!" *)
    
   let interrupted_bool = ref false
   let interrupted_mvar = Lwt_mvar.create_empty()
@@ -155,8 +155,8 @@ module Make (Config: I_Config) : I_Leader = struct
         run_leader ()
       | all_updates -> (let perform_update updates = (  
         add_list_to_blockchain updates >>= fun _ ->
-        Lwt.return @@ Printf.printf "\027[95mFound New Updates:\027[39m\n%! " >>= fun _ ->
-        print_list() >>= fun _ ->
+        Lwt.return @@ Printf.printf "\027[95mFound %i New Updates\027[39m\n%!" (List.length updates)>>= fun _ ->
+        (* print_list() >>= fun _ -> *)
         IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun new_cursor ->
         mempool_cursor:= new_cursor;
         Lwt_unix.sleep 1.0 >>= fun _ -> 
@@ -197,7 +197,7 @@ module Make (Config: I_Config) : I_Leader = struct
     get_new_mempool_updates() >>= (function 
       | [] -> Lwt.return ()
       | updates -> add_list_to_blockchain updates) >>= fun _ ->
-    print_list() >>= fun _ ->
+    (* print_list() >>= fun _ -> *)
     write "\027[95m\nBlockchain initialised. Press any key to start the leader: \027[39m" >>= fun _ ->
     read() >>= fun _ ->
     run_leader()
