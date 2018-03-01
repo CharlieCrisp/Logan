@@ -31,8 +31,8 @@ module Participant = Blockchain.MakeParticipant(Config)
 let rec test_blockchain itr = 
   let id = string_of_int !machine_id in
   let nstr = string_of_int itr in
-  let machine_id = "machine_id: "^id in 
-  let txn = "txn: "^nstr in
+  let machine_id = id in 
+  let txn = nstr in
   match itr with
   | 0 -> Lwt.return @@ Participant.add_transaction_to_mempool (machine_id, txn)
   | _ -> Participant.add_transaction_to_mempool (machine_id, txn) >>= fun _ ->
