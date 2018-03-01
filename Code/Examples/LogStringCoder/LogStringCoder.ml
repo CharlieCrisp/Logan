@@ -10,7 +10,7 @@ module BookLogStringCoder: Blockchain.I_LogStringCoder with type t = string * st
 
   let build_json ((sender_id, receiver_id, book_id):t) = 
     let str = Ezjsonm.string in 
-    let now = Unix.time() in 
+    let now = Ptime.to_float_s (Ptime_clock.now()) in 
     let time = ("Time", str (string_of_float now)) in
     let send = ("sender_id", str sender_id) in 
     let receiver = ("receiver_id", str receiver_id) in

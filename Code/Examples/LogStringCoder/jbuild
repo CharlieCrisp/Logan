@@ -3,4 +3,4 @@
 (library
  ((name        LogStringCoder)
   (public_name logstringcoder)
-  (libraries (ezjsonm blockchain))))
+  (libraries (ezjsonm blockchain ptime))))
