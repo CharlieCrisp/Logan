@@ -16,9 +16,11 @@ part:
 	mv _build/default/Code/Examples/ParticipantDemo.exe bin/part.exe
 
 test:
-	jbuilder build Code/Tests/test_single_machine_speed.exe
+	jbuilder build Code/Tests/TestLeader.exe
+	jbuilder build Code/Tests/ThroughputLatencyTester.exe
 	mkdir -p bin
-	mv _build/default/Code/Tests/test_single_machine_speed.exe bin/test_single_machine_speed.exe
+	mv _build/default/Code/Tests/ThroughputLatencyTester.exe bin/ThroughputLatencyTester.exe
+	mv _build/default/Code/Tests/TestLeader.exe bin/TestLeader.exe
 
 clean:
 	jbuilder clean

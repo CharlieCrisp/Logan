@@ -1,7 +1,7 @@
 (jbuild_version 1)
 
-(executable
- ((name test_single_machine_speed)
-  (modules (test_single_machine_speed))
+(executables
+ ((names (ThroughputLatencyTester TestLeader))
+  (modules (ThroughputLatencyTester TestLeader))
   (modes (native))
   (libraries (lwt.unix ezirmin tc lwt ezjsonm core_extended logstringcoder))))
