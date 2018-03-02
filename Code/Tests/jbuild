@@ -1,7 +1,7 @@
 (jbuild_version 1)
 
 (executables
- ((names (ThroughputLatencyTester TestLeader))
-  (modules (ThroughputLatencyTester TestLeader))
+ ((names (ThroughputLatencyTester TestLeader GatherLeaderResults))
+  (modules (ThroughputLatencyTester TestLeader GatherLeaderResults))
   (modes (native))
   (libraries (lwt.unix ezirmin tc lwt ezjsonm core_extended ptime logstringcoder))))

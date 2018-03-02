@@ -37,11 +37,9 @@ module Make (Config: I_Config) : I_Leader = struct
     ignore_lwt @@ IrminLogMem.Sync.pull remote_mem mempool_master_branch `Merge]
 
   let add_value_to_blockchain value = 
-    Logger.info (Printf.sprintf "Entry added to blockchain: %s" value);
     IrminLogBlock.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path value
   (*Decode and re-encode value so as to get new timestamp*)
   let add_txn_to_blockchain value = 
-    Logger.info (Printf.sprintf "Entry added to blockchain: %s" value);
     let txn_opt = Config.LogCoder.decode_string value in
     match txn_opt with 
       | Some(txn) -> let txn_string = Config.LogCoder.encode_string txn in
@@ -102,19 +100,6 @@ module Make (Config: I_Config) : I_Leader = struct
         update_mempools xs;
       | [] -> Lwt.return ()
     in update_mempools remotes
-    
- let rec log_list list = match list with 
-    | (x::[]) -> Lwt.return @@ Logger.info (Printf.sprintf "%s%!" x)
-    | (x::xs) -> Lwt.return @@ Logger.info (Printf.sprintf "%s\n%!" x) >>= fun _ -> log_list xs
-    | [] -> Lwt.return @@ ()
-
-  let log_list () = Lwt.return @@ Logger.info "\n-----Start Block-----\n" >>= fun _ ->
-    IrminLogBlock.read_all blockchain_master_branch [] >>= fun list ->
-    log_list list >>= fun _ ->
-    Lwt.return @@ Logger.info "\n-----Start MemPo-----\n" >>= fun _ ->
-    IrminLogMem.read_all mempool_master_branch [] >>= fun list ->
-    log_list list >>= fun _ ->
-    Lwt.return @@ Logger.info "\n------End MemPo------\n\n%!"
    
   let interrupted_bool = ref false
   let interrupted_mvar = Lwt_mvar.create_empty()
@@ -156,7 +141,6 @@ module Make (Config: I_Config) : I_Leader = struct
   let fail_nicely str = interrupted_bool := true;
     run (Lwt_mvar.take interrupted_mvar >>= fun _ -> 
       IrminLogBlock.read_all blockchain_master_branch ~path:path >>= fun blockchain ->
-      log_list() >>= fun _ ->
       Lwt.return @@ Printf.printf "\nHalting execution due to: %s%!" str)
     
   let register_handlers () = 
