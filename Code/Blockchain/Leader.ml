@@ -10,6 +10,7 @@ module type I_Config = sig
 end
 
 module type I_Leader = sig
+  (*This performs certain initialisations, then will return a function that actually runs the leader*)
   val init_leader: unit -> (unit -> unit Lwt.t) Lwt.t
 end
 
