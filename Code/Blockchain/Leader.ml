@@ -2,6 +2,7 @@ open Lwt.Infix
 
 let write value = Lwt_io.write Lwt_io.stdout value
 let read () = Lwt_io.read_line Lwt_io.stdin 
+module Logger = Logger.Logger
 
 module type I_Config = sig 
   type t 
@@ -12,24 +13,6 @@ end
 
 module type I_Leader = sig
   val start_leader: unit -> unit Lwt.t
-end
-
-module Logger = struct 
-  
-  let error str = 
-    let log = open_out_gen [Open_creat; Open_text; Open_append] 0o640 "blockchain.log" in
-    Printf.fprintf log "[ERROR] %s\n" str;
-    close_out log
-
-  let debug str = 
-    let log = open_out_gen [Open_creat; Open_text; Open_append] 0o640 "blockchain.log" in
-    Printf.fprintf log "[DEBUG] %s\n" str;
-    close_out log
-
-  let info str = 
-    let log = open_out_gen [Open_creat; Open_text; Open_append] 0o640 "blockchain.log" in
-    Printf.fprintf log "[INFO] %s\n" str;
-    close_out log
 end
 
 module Make (Config: I_Config) : I_Leader = struct
@@ -121,18 +104,18 @@ module Make (Config: I_Config) : I_Leader = struct
       | [] -> Lwt.return ()
     in update_mempools remotes
     
-  (* let rec print_list list = match list with 
-    | (x::[]) -> Lwt.return @@ Printf.printf "%s%!" x
-    | (x::xs) -> Lwt.return @@ Printf.printf "%s\n%!" x >>= fun _ -> print_list xs
+ let rec log_list list = match list with 
+    | (x::[]) -> Lwt.return @@ Logger.info (Printf.sprintf "%s%!" x)
+    | (x::xs) -> Lwt.return @@ Logger.info (Printf.sprintf "%s\n%!" x) >>= fun _ -> log_list xs
     | [] -> Lwt.return @@ ()
 
-  let print_list () = Lwt.return @@ Printf.printf "\n\027[92m-----Start Block-----\027[32m\n" >>= fun _ ->
+  let log_list () = Lwt.return @@ Logger.info "\n-----Start Block-----\n" >>= fun _ ->
     IrminLogBlock.read_all blockchain_master_branch [] >>= fun list ->
-    print_list list >>= fun _ ->
-    Lwt.return @@ Printf.printf "\n\027[93m-----Start MemPo-----\027[33m\n" >>= fun _ ->
+    log_list list >>= fun _ ->
+    Lwt.return @@ Logger.info "\n-----Start MemPo-----\n" >>= fun _ ->
     IrminLogMem.read_all mempool_master_branch [] >>= fun list ->
-    print_list list >>= fun _ ->
-    Lwt.return @@ Printf.printf "\n\027[91m------End MemPo------\027[39m\n\n%!" *)
+    log_list list >>= fun _ ->
+    Lwt.return @@ Logger.info "\n------End MemPo------\n\n%!"
    
   let interrupted_bool = ref false
   let interrupted_mvar = Lwt_mvar.create_empty()
@@ -155,7 +138,7 @@ module Make (Config: I_Config) : I_Leader = struct
         run_leader ()
       | all_updates -> (let perform_update updates = (  
         add_list_to_blockchain updates >>= fun _ ->
-        Lwt.return @@ Printf.printf "\027[95mFound %i New Updates\027[39m\n%!" (List.length updates)>>= fun _ ->
+        Lwt.return @@ Logger.info (Printf.sprintf "\027[95mFound %i New Updates\027[39m\n%!" (List.length updates))>>= fun _ ->
         (* print_list() >>= fun _ -> *)
         IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun new_cursor ->
         mempool_cursor:= new_cursor;
@@ -173,6 +156,8 @@ module Make (Config: I_Config) : I_Leader = struct
   
   let fail_nicely str = interrupted_bool := true;
     run (Lwt_mvar.take interrupted_mvar >>= fun _ -> 
+      IrminLogBlock.read_all blockchain_master_branch ~path:path >>= fun blockchain ->
+      log_list() >>= fun _ ->
       Lwt.return @@ Printf.printf "\nHalting execution due to: %s%!" str)
     
   let register_handlers () = 

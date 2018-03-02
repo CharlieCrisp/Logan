@@ -4,4 +4,4 @@
  ((names (ThroughputLatencyTester TestLeader))
   (modules (ThroughputLatencyTester TestLeader))
   (modes (native))
-  (libraries (lwt.unix ezirmin tc lwt ezjsonm core_extended logstringcoder))))
+  (libraries (lwt.unix ezirmin tc lwt ezjsonm core_extended ptime logstringcoder))))
