@@ -36,16 +36,35 @@ module BookLogStringCoder: Blockchain.I_LogStringCoder with type t = string * st
       Some((sender, receiver, book):t)
     with 
       | _ -> None
+
+  exception DecodeError
+  let decode_log_item str = 
+    try
+      let json = Ezjsonm.from_string str in
+      let dict = Ezjsonm.get_dict json in
+      let sender_id = get_value dict "sender_id" in
+      let receiver_id = get_value dict "receiver_id" in
+      let book_id = get_value dict "book_id" in
+      let time = float_of_string(get_value dict "Time") in
+      {time;sender_id;receiver_id;book_id}
+    with 
+      | _ -> raise DecodeError
+
+  let is_equal item1 item2 = 
+    if item1.time = item2.time then true else false
+  
+  let get_time_diff item1 item2 =
+    abs_float(item1.time -. item2.time)
+  let get_time item = item.time
 end
 
 module TestLogStringCoder: Blockchain.I_LogStringCoder with type t = string * string = struct
   
   type t = string * string 
-
   type log_item = 
-      { time: float;
-        machine_id: string;
-        txn_id: string }
+    { time: float;
+      machine_id: string;
+      txn_id: string }
 
   let build_json ((machine_id, txn_id):t) = 
     let str = Ezjsonm.string in 
@@ -73,4 +92,24 @@ module TestLogStringCoder: Blockchain.I_LogStringCoder with type t = string * st
       Some((machine, txn):t)
     with 
       | _ -> None
+
+  exception DecodeError
+  let decode_log_item str = 
+    try
+      let json = Ezjsonm.from_string str in
+      let dict = Ezjsonm.get_dict json in
+      let machine_id = get_value dict "machine_id" in
+      let txn_id = get_value dict "txn_id" in
+      let time = float_of_string(get_value dict "Time") in
+      {time;machine_id;txn_id}
+    with 
+      | _ -> raise DecodeError
+
+  let is_equal item1 item2 = 
+    if item1.txn_id = item2.txn_id then true else false
+  
+  let get_time_diff item1 item2 =
+    abs_float(item1.time -. item2.time)
+
+  let get_time item = item.time
 end
