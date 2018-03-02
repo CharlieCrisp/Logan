@@ -23,13 +23,4 @@ let log_list () = Lwt.return @@ Logger.info "\n-----Start Block-----\n" >>= fun 
   log_list list >>= fun _ ->
   Lwt.return @@ Logger.log "\n------End MemPo------\n\n"
 
-
-module Config : Blockchain.I_LeaderConfig with type t = string * string = struct 
-  type t = string * string
-  module LogCoder = LogStringCoder.TestLogStringCoder
-  let remotes = []
-  let validator = None
-end
-
-module Leader = Blockchain.MakeLeader(Config);;
 Lwt_main.run @@ log_list();;
