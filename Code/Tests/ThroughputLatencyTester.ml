@@ -56,6 +56,7 @@ let rec test_blockchain itr =
   | _ -> Participant.add_transaction_to_mempool (machine_id, txn) >>= fun _ ->
     test_blockchain (itr-1)
 
+let test_interval = 5.0
 let rec test_blockchain_increasing inc_time sleep_time = 
   Lwt_main.run @@ Lwt_unix.sleep sleep_time; 
   let now = Ptime_clock.now() in 
@@ -66,7 +67,7 @@ let rec test_blockchain_increasing inc_time sleep_time =
   if sleep_time < 0.01 then Lwt.return () else
   match now > inc_time with
   | true -> itr := !itr + 1;
-    (match (of_float_s((to_float_s inc_time) +. 5.0)) with 
+    (match (of_float_s((to_float_s inc_time) +. test_interval)) with 
       | Some(new_inc_time) -> Printf.printf "Using rate, %f txn/s\n%!" (1.0 /. (sleep_time /. 2.0)); 
         test_blockchain_increasing new_inc_time (sleep_time /. 2.0)
       | _ -> test_blockchain_increasing inc_time (sleep_time /. 2.0))
@@ -79,7 +80,9 @@ let rec test_blockchain_start() =
   match now > !start_time with  
     | true -> Printf.printf "Starting Tests\n%!";
       Printf.printf "Using rate, 1 txn/s\n%!";
-      test_blockchain_increasing !start_time 1.0
+      (match (of_float_s(to_float_s(!start_time) +. test_interval)) with 
+       | Some(inc_time) -> test_blockchain_increasing inc_time 1.0
+       | _ -> test_blockchain_increasing !start_time 1.0)
     | false -> Lwt_unix.sleep 0.1 >>= fun _ -> test_blockchain_start();;
 
 Lwt_main.run @@ test_blockchain_start();;
