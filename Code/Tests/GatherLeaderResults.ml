@@ -15,7 +15,7 @@ let rec log_list list = match list with
     | (x::xs) -> Lwt.return @@ Logger.log x >>= fun _ -> log_list xs
     | [] -> Lwt.return @@ ()
 
-let log_list () = Lwt.return @@ Logger.info "\n-----Start Block-----\n" >>= fun _ ->
+let log_list () = Lwt.return @@ Logger.log "\n-----Start Block-----\n" >>= fun _ ->
   IrminLogBlock.read_all blockchain_master_branch [] >>= fun list ->
   log_list list >>= fun _ ->
   Lwt.return @@ Logger.log "\n-----Start MemPo-----\n" >>= fun _ ->
