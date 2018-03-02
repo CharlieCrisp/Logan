@@ -1,3 +1,4 @@
+open Lwt.Infix
 let format_remote str = let value = Printf.sprintf "git+ssh://%s/tmp/ezirminl/part/mempool" str in
   Printf.printf "Using remote: %s\n%!" value; value
 
@@ -14,4 +15,7 @@ module Config : Blockchain.I_LeaderConfig with type t = string * string = struct
 end
 
 module Leader = Blockchain.MakeLeader(Config);;
-Lwt_main.run @@ Leader.start_leader();;
+Lwt_main.run @@ (Leader.init_leader() >>= fun start_leader ->
+  Lwt_io.write Lwt_io.stdout  "\027[95m\nBlockchain initialised. Press any key to start the leader: \027[39m" >>= fun _ ->
+  Lwt_io.read_line Lwt_io.stdin >>= fun _ ->
+  start_leader());;

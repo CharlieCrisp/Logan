@@ -1,7 +1,5 @@
 open Lwt.Infix
 
-let write value = Lwt_io.write Lwt_io.stdout value
-let read () = Lwt_io.read_line Lwt_io.stdin 
 module Logger = Logger.Logger
 
 module type I_Config = sig 
@@ -12,7 +10,7 @@ module type I_Config = sig
 end
 
 module type I_Leader = sig
-  val start_leader: unit -> unit Lwt.t
+  val init_leader: unit -> (unit -> unit Lwt.t) Lwt.t
 end
 
 module Make (Config: I_Config) : I_Leader = struct
@@ -175,16 +173,13 @@ module Make (Config: I_Config) : I_Leader = struct
       | curs -> mempool_cursor := curs;
         Lwt.return ()
 
-  let start_leader () = 
+  let init_leader () = 
     Logger.info "Starting Leader";
     register_handlers();  
-    add_genesis_and_update_cursor() >>= fun _ ->
-    get_new_mempool_updates() >>= (function 
+    add_genesis_and_update_cursor() >>= 
+    get_new_mempool_updates >>= (function 
       | [] -> Lwt.return ()
-      | updates -> add_list_to_blockchain updates) >>= fun _ ->
-    (* print_list() >>= fun _ -> *)
-    write "\027[95m\nBlockchain initialised. Press any key to start the leader: \027[39m" >>= fun _ ->
-    read() >>= fun _ ->
-    run_leader()
+      | updates -> add_list_to_blockchain updates) >>= fun _ -> 
+        Lwt.return (fun () -> run_leader())
 end;;
   
