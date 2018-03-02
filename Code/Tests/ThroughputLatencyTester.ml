@@ -66,7 +66,7 @@ let rec test_blockchain_increasing inc_time sleep_time =
   if sleep_time < 0.01 then Lwt.return () else
   match now > inc_time with
   | true -> itr := !itr + 1;
-    (match (of_float_s((to_float_s inc_time) +. 10.0)) with 
+    (match (of_float_s((to_float_s inc_time) +. 5.0)) with 
       | Some(new_inc_time) -> Printf.printf "Using rate, %f txn/s\n%!" (1.0 /. (sleep_time /. 2.0)); 
         test_blockchain_increasing new_inc_time (sleep_time /. 2.0)
       | _ -> test_blockchain_increasing inc_time (sleep_time /. 2.0))
