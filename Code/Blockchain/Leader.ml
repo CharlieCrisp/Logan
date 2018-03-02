@@ -28,6 +28,8 @@ module Make (Config: I_Config) : I_Leader = struct
   let part_mempool_master_branch = run @@ IrminLogPartMem.master mempool_local_repo
   let remotes = List.map (fun str -> (IrminLogMem.Sync.remote_uri str, str)) Config.remotes
   let internal_branch = run @@ IrminLogMem.get_branch mempool_repo "internal"
+  let mempool_cursor: IrminLogMem.cursor option ref = ref None
+  let part_mempool_cursor: IrminLogPartMem.cursor option ref = ref None
   exception Validator_Not_Supplied
   exception Could_Not_Initialise_Blockchain
 
@@ -46,7 +48,6 @@ module Make (Config: I_Config) : I_Leader = struct
         IrminLogBlock.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path txn_string
       | _ -> Lwt.return ()
   let add_list_to_blockchain list = Lwt_list.iter_s add_txn_to_blockchain list 
-  let mempool_cursor: IrminLogMem.cursor option ref = ref None
 
   let rec flat_map = function 
     | [] -> []
@@ -77,20 +78,21 @@ module Make (Config: I_Config) : I_Leader = struct
 
   let update_from_part_mempool () = 
     let rec get_with_cursor latest_known new_curs item_acc = ( 
-      Lwt.return @@ IrminLogMem.is_earlier latest_known ~than:new_curs >>= function
+      Lwt.return @@ IrminLogPartMem.is_earlier latest_known ~than:new_curs >>= function
         | Some(true) -> IrminLogPartMem.read ~num_items:1 new_curs >>= (function 
           | ([item], Some(new_cursor)) -> get_with_cursor latest_known new_cursor (item::item_acc)
           | _ -> Lwt.return item_acc)
         | _ -> Lwt.return item_acc) in
     let add_value_to_mempool value = IrminLogMem.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:path value in
     let add_list_to_mempool list = Lwt_list.iter_s add_value_to_mempool list in
-    IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun leader_mempool ->
-    IrminLogPartMem.get_cursor part_mempool_master_branch ~path:path >>= fun part_mempool ->
-    match (leader_mempool, part_mempool) with
+    IrminLogPartMem.get_cursor part_mempool_master_branch ~path:path >>= fun new_part_cursor ->
+    match (!part_mempool_cursor, new_part_cursor) with
       | (Some(l_cursor), Some(p_cursor)) -> get_with_cursor l_cursor p_cursor [] >>= fun updates ->
-        add_list_to_mempool updates
+        add_list_to_mempool updates >>= fun _ ->
+        Lwt.return @@ (part_mempool_cursor := new_part_cursor)
       | (None, Some(p_cursor)) -> IrminLogMem.read ~num_items: 1 p_cursor >>= fun (updates, _) ->
-        add_list_to_mempool updates
+        add_list_to_mempool updates >>= fun _ ->
+        Lwt.return @@ (part_mempool_cursor := new_part_cursor)
       | _ -> Lwt.return ()
 
   (*This will sequentially merge changes from all the mempools in the known remotes*)
@@ -158,10 +160,20 @@ module Make (Config: I_Config) : I_Leader = struct
       | curs -> mempool_cursor := curs;
         Lwt.return ()
 
+  let add_part_genesis_and_cursor () = IrminLogPartMem.get_cursor mempool_master_branch ~path:path >>= function
+  | None -> IrminLogPartMem.append ~message:"Entry added to the blockchain" part_mempool_master_branch ~path:path "Genesis Commit" >>= fun _ ->
+    IrminLogMem.get_cursor mempool_master_branch ~path:path >>= (function 
+      | None -> raise Could_Not_Initialise_Blockchain
+      | curs -> part_mempool_cursor := curs;
+        Lwt.return ())
+  | curs -> part_mempool_cursor := curs;
+    Lwt.return ()
+
   let init_leader () = 
     Logger.info "Starting Leader";
     register_handlers();  
     add_genesis_and_update_cursor() >>= 
+    add_part_genesis_and_cursor >>=
     get_new_mempool_updates >>= (function 
       | [] -> Lwt.return ()
       | updates -> add_list_to_blockchain updates) >>= fun _ -> 
