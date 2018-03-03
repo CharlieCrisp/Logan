@@ -52,8 +52,19 @@ for i = 1:size(data,1)-2
 end
 
 latency_deviation = sqrt(latency_deviation ./ (data_size - 1));
-
-e = errorbar(throughput_data, latency_means, latency_deviation);
+figure
+errorbar(throughput_data, latency_means, latency_deviation);
 xlabel({"Throughput";"transactions s^{-1}";""});
 ylabel({"Latency";"s"});
 
+figure
+e = errorbar(throughput_data, latency_means, latency_deviation);
+e.LineStyle = "none";
+
+X = [ones(result_length,1) (throughput_data')];
+b = X \ (latency_means');
+ycalc = X * b;
+hold on
+plot(throughput_data, ycalc);
+xlabel({"Throughput";"transactions s^{-1}";""});
+ylabel({"Latency";"s"});
