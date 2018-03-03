@@ -3,35 +3,57 @@ data = importdata("../../../output.log");
 %filter NaN rows
 data(any(isnan(data), 2), :) = [];
 data = flipud(data);
-latency_data = zeros(1, bins);
-throughput_data = zeros(1, bins);
+rates = unique(data(:,3));
+result_length = size(rates,1);
 
-length = size(data,1);
-bins = 30;
-binsize = floor(length/bins);
-
-for i = 1:bins
-    start_index = i * binsize;
-    end_index = (i+1)*binsize;
-    if (end_index > length)
-        end_index = length;
+latency_means = zeros(1, result_length);
+latency_deviation = zeros(1, result_length);
+throughput_data = zeros(1, result_length);
+data_size = zeros(1, result_length);
+ 
+last_rate = 0;
+result_index = 0;
+%Calculate the mean values of the sets of data which are marked with the
+%same throughput rate
+for i = 1:size(data,1)-2
+    current_rate = data(i,3);
+    if last_rate ~= current_rate
+        result_index = result_index + 1;
+        last_rate = current_rate;
     end
-    this_bin_size = end_index - start_index;
-    start_time = data(i * binsize, 1);
-    end_time = data(end_index, 1);
-    
-    total_latency = 0;
-    throughput = this_bin_size / (end_time - start_time);
-   
-    for j = 1:binsize
-       index = (i-1) * binsize + j;
-       latency = data(index,2) - data(index,1); 
-       total_latency = total_latency + latency;
-    end
-    throughput_data(i) = throughput;
-    latency_data(i) = total_latency/this_bin_size;
+    t_s1 = data(i, 1);
+    t_e1 = data(i, 2);
+    t_s2 = data(i + 1, 1);
+    data_size(result_index) = data_size(result_index) + 1;
+    %data is currently cumulative
+    throughput_data(result_index) = throughput_data(result_index) + (1 / (t_s2 - t_s1));
+    latency_means(result_index) = latency_means(result_index) + t_e1 - t_s1;
 end
 
-scatter(throughput_data, latency_data, "filled");
+%divide cumulative data to get averate
+throughput_data = throughput_data ./ data_size;
+latency_means = latency_means ./ data_size;
+
+last_rate = 0;
+result_index = 0;
+%Calculate the standard deviation values 
+for i = 1:size(data,1)-2
+    current_rate = data(i,3);
+    if last_rate ~= current_rate
+        result_index = result_index + 1;
+        last_rate = current_rate;
+    end
+    t_s1 = data(i, 1);
+    t_e1 = data(i, 2);
+    latency= t_e1 - t_s1;
+    %data is currently cumulative
+    latency_deviation(result_index) = latency_deviation(result_index) + ... 
+        (latency - latency_means(result_index))^2;
+end
+
+latency_deviation = sqrt(latency_deviation ./ (data_size - 1));
+
+e = errorbar(throughput_data, latency_means, latency_deviation);
 xlabel({"Throughput";"transactions s^{-1}";""});
 ylabel({"Latency";"s"});
+

@@ -7,8 +7,8 @@ let remotes = List.map format_remote (List.tl (Array.to_list Sys.argv))
 (*The following function can be used to demonstrate a validation mechanism*)
 (* let fil a b = List.filter (function |("charlie", _,_) -> true | _ -> false) b  *)
 
-module Config : Blockchain.I_LeaderConfig with type t = string * string = struct 
-  type t = string * string
+module Config : Blockchain.I_LeaderConfig with type t = string * string * float = struct 
+  type t = string * string * float
   module LogCoder = LogStringCoder.TestLogStringCoder
   let remotes = remotes
   let validator = None
