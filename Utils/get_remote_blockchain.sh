@@ -1,0 +1,8 @@
+DESTINATION=$1
+if [ -z "$DESTINATION" ]
+then
+echo "Please give me something to sync from, in the form user@host" 
+else
+rm -rf /tmp/ezirminl/lead/blockchain
+LOCATION="ssh://$DESTINATION/tmp/ezirminl/lead/mempool"
+git clone $LOCATION /tmp/ezirminl/lead/blockchain
