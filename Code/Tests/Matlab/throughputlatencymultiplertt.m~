@@ -1,0 +1,20 @@
+format long;
+data = importdata("../../../single_remote_worker.log");
+
+tpget_processed_data(data);
+
+figure
+e = errorbar(throughput_data, latency_means, latency_deviation, '-b');
+e.LineStyle = "none";
+e.Marker = 'x';
+
+X = [ones(result_length,1) (throughput_data')];
+b = X \ (latency_means');
+ycalc = X * b;
+hold on
+pl = plot(throughput_data, ycalc, '-b');
+legend('Location', 'northwest');
+legend([e;pl], 'Data for rtt = 2.2ms', 'Linear regression fit for rtt=2.2ms');
+
+xlabel({"Throughput";"transactions s^{-1}";""});
+ylabel({"Latency";"s"});
