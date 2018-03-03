@@ -32,4 +32,6 @@ for i = 1:bins
     latency_data(i) = total_latency/this_bin_size;
 end
 
-scatter(throughput_data, latency_data);
+scatter(throughput_data, latency_data, "filled");
+xlabel({"Throughput";"transactions s^{-1}";""});
+ylabel({"Latency";"s"});
