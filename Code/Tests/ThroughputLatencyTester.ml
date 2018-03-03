@@ -3,15 +3,12 @@
 open Lwt.Infix
 open Ptime
 let remote_uri = ref None
-let n = ref 10
 let machine_id = ref 0
 let itr = ref 0
 let start_time = ref (Ptime_clock.now())
 let parse_is_local str = 
   remote_uri := Some(str);
   Printf.printf "\n\027[93mUsing leader address:\027[39m %s\n%!" str
-let parse_iterations itr = 
-  n := itr
 let parse_id num = 
   machine_id := num
 let parse_time input = 
@@ -29,12 +26,11 @@ let parse_time input =
 
 
 
-let iterations_tuple = ("-n", Arg.Int parse_iterations, "Specify the number of iterations")
 let remote_tuple = ("-r", Arg.String parse_is_local, "Specify the remote repository in the form user@host")
 let id_tuple = ("-i", Arg.Int parse_id, "Specify the machine id as a number")
 let start_tuple = ("-s", Arg.String parse_time, "Specify when this should begin")
 
-let _ = Arg.parse [remote_tuple; iterations_tuple; id_tuple; start_tuple] (fun _ -> ()) ""
+let _ = Arg.parse [remote_tuple; id_tuple; start_tuple] (fun _ -> ()) ""
 
 type transaction = string * string * float
 module Config : Blockchain.I_ParticipantConfig with type t = transaction = struct 
@@ -85,3 +81,5 @@ let rec test_blockchain_start() =
     | false -> Lwt_unix.sleep 0.1 >>= fun _ -> test_blockchain_start();;
 
 Lwt_main.run @@ test_blockchain_start();;
+Lwt_main.run @@ Lwt_unix.sleep 5.0;;
+Lwt_main.run @@ Participant.get_all_transactions_from_blockchain();;
