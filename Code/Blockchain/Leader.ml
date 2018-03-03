@@ -128,7 +128,6 @@ module Make (Config: I_Config) : I_Leader = struct
         (* print_list() >>= fun _ -> *)
         IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun new_cursor ->
         mempool_cursor:= new_cursor;
-        Lwt_unix.sleep 1.0 >>= fun _ -> 
         run_leader ()
         ) in
         match Config.validator with 
