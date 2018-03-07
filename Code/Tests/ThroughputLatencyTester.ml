@@ -50,9 +50,8 @@ let rec test_blockchain_increasing inc_time rates =
       Lwt_main.run @@ Lwt_unix.sleep rate; 
       let now = Ptime_clock.now() in 
       let id = string_of_int !machine_id in
-      let nstr = string_of_int !itr in
       let machine_id = id in 
-      let txn = nstr in
+      let txn =  Printf.sprintf "machine: %s; txn: %s;" machine_id (string_of_int !itr) in
       match now > inc_time with
       | true -> itr := !itr + 1;
         (match (of_float_s((to_float_s inc_time) +. duration)) with 
