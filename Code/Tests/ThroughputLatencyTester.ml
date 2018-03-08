@@ -42,7 +42,7 @@ end
 
 module Participant = Blockchain.MakeParticipant(Config)
 
-let test_interval = 10.0
+
 let rec test_blockchain_increasing inc_time rates = 
   match rates with 
    | [] -> Lwt.return ()
@@ -74,7 +74,7 @@ let rec test_blockchain_start() =
   match now > !start_time with  
     | true -> Printf.printf "Starting Tests\n%!";
       Printf.printf "Using rate, 1 txn/s\n%!";
-      (match (of_float_s(to_float_s(!start_time) +. test_interval)) with 
+      (match (of_float_s(to_float_s(!start_time) +. (snd(List.hd rates)))) with 
        | Some(inc_time) -> test_blockchain_increasing inc_time rates
        | _ -> test_blockchain_increasing !start_time rates)
     | false -> Lwt_unix.sleep 0.1 >>= fun _ -> test_blockchain_start();;
