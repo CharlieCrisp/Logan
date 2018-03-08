@@ -6,3 +6,4 @@ echo "Please give me something to sync from, in the form user host"
 else
 LOCATION="$USER@$HOST:/$USER/PartIIProject/output.log"
 scp $LOCATION .
+fi

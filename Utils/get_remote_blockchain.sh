@@ -6,3 +6,4 @@ else
 rm -rf /tmp/ezirminl/lead/blockchain
 LOCATION="ssh://$DESTINATION/tmp/ezirminl/lead/mempool"
 git clone $LOCATION /tmp/ezirminl/lead/blockchain
+fi
