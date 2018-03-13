@@ -19,7 +19,7 @@ let rec log_list list = match list with
     | (x::xs) -> Lwt.return @@ Logger.log x >>= fun _ -> log_list xs
     | [] -> Lwt.return @@ ()
 
-let find_matching item list =
+let find_matching item list = 
   if item = "Genesis Commit" then None else
   let item_decoded = Coder.decode_log_item item in 
   let rec loop = function 
