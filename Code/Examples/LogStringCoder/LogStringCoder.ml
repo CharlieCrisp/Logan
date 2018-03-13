@@ -118,7 +118,7 @@ module TestLogStringCoder: Blockchain.I_LogStringCoder with type t = string * st
       | _ -> raise DecodeError
 
   let is_equal item1 item2 = 
-    if item1.txn_id = item2.txn_id then true else false
+    if item1.txn_id = item2.txn_id && item1.machine_id = item2.machine_id then true else false
   
   let get_time_diff item1 item2 =
     abs_float(item1.time -. item2.time)
