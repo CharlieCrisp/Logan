@@ -19,8 +19,9 @@ let rec log_list list = match list with
     | (x::xs) -> Lwt.return @@ Logger.log x >>= fun _ -> log_list xs
     | [] -> Lwt.return @@ ()
 
-let find_matching item list = let item_decoded = Coder.decode_log_item item in 
+let find_matching item list =
   if item = "Genesis Commit" then None else
+  let item_decoded = Coder.decode_log_item item in 
   let rec loop = function 
     | (x::_) when x = "Genesis Commit" -> None
     | (x::xs) -> (let comparison_item = Coder.decode_log_item x in 
@@ -34,6 +35,7 @@ let find_matching item list = let item_decoded = Coder.decode_log_item item in
 
 (*Log pairs of values for matching txns: add time and commit time. I.e. when added to mempool vs blockchain*)
 let rec log_all_matching mempool_list blockchain_list = match mempool_list with 
+  | (x::xs) when x = "Genesis Commit" -> log_all_matching xs blockchain_list
   | (x::xs) -> let opt = find_matching x blockchain_list in (
     match opt with 
       | Some((mempool_item,blockchain_item), new_blockchain) ->
