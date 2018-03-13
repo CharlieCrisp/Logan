@@ -39,7 +39,7 @@ let rec log_all_matching mempool_list blockchain_list = match mempool_list with
   | (x::xs) -> let opt = find_matching x blockchain_list in (
     match opt with 
       | Some((mempool_item,blockchain_item), new_blockchain) ->
-        Logger.log (Printf.sprintf "%f %f %f" (Coder.get_time mempool_item) (Coder.get_time blockchain_item) (Coder.get_rate mempool_item));
+        Logger.log (Printf.sprintf "%f %f %f %s" (Coder.get_time mempool_item) (Coder.get_time blockchain_item) (Coder.get_rate mempool_item) (Coder.get_machine mempool_item));
         log_all_matching xs new_blockchain
       | _ ->  Logger.log (Printf.sprintf "%f" (Coder.get_time (Coder.decode_log_item x)));
         log_all_matching xs blockchain_list )
