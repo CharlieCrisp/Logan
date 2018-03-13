@@ -47,7 +47,11 @@ module Make (Config: I_Config) : I_Leader = struct
       | Some(txn) -> let txn_string = Config.LogCoder.encode_string txn in
         IrminLogBlock.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path txn_string
       | _ -> Lwt.return ()
-  let add_list_to_blockchain list = Lwt_list.iter_s add_txn_to_blockchain list 
+  let add_list_to_blockchain list = 
+    Logger.info (Printf.sprintf "Starting to add to blockchain at time %f" (Ptime.to_float_s (Ptime_clock.now()))); 
+    Lwt_list.iter_s add_txn_to_blockchain list >>= fun _ ->
+    Logger.info (Printf.sprintf "Starting retrieval of new mempool updates at time %f" (Ptime.to_float_s (Ptime_clock.now())));
+    Lwt.return ()
 
   let rec flat_map = function 
     | [] -> []
@@ -63,12 +67,14 @@ module Make (Config: I_Config) : I_Leader = struct
           | ([item], Some(new_cursor)) -> get_with_cursor latest_known new_cursor (item::item_acc)
           | _ -> Lwt.return item_acc)
         | _ -> Lwt.return item_acc) in
+        Logger.info (Printf.sprintf "Starting retrieval of new mempool updates at time %f" (Ptime.to_float_s (Ptime_clock.now())));
       IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun new_mem_cursor ->
       match (!mempool_cursor, new_mem_cursor) with
         | (Some(latest_known), Some(new_curs)) -> get_with_cursor latest_known new_curs []
         | (None, Some(new_curs)) -> IrminLogPartMem.read ~num_items: 1 new_curs >>= (function 
-          | (xs, _) -> Lwt.return xs)
-        | _ -> Lwt.return []
+          | (xs, _) -> Logger.info (Printf.sprintf "Finishing retrieval of new mempool updates at time %f" (Ptime.to_float_s (Ptime_clock.now())));
+            Lwt.return xs)
+        | _ -> Logger.info (Printf.sprintf "Starting retrieval of new mempool updates at time %f" (Ptime.to_float_s (Ptime_clock.now()))); Lwt.return []
 
   let update_from_remote remote = 
     try 
@@ -97,11 +103,13 @@ module Make (Config: I_Config) : I_Leader = struct
 
   (*This will sequentially merge changes from all the mempools in the known remotes*)
   let update_mempool () = 
-    let rec update_mempools = function 
-      | (x,str)::xs -> update_from_remote x >>= fun _ ->
-        update_mempools xs;
+    let rec update_mempools num = function 
+      | (x,str)::xs -> Logger.info (Printf.sprintf "Starting Pull from remote %i at time %f" num (Ptime.to_float_s (Ptime_clock.now())));
+        update_from_remote x >>= fun _ ->
+        Logger.info (Printf.sprintf "Finishing Pull from remote %i at time %f" num (Ptime.to_float_s (Ptime_clock.now()))); 
+        update_mempools (num+1) xs;
       | [] -> Lwt.return ()
-    in update_mempools remotes
+    in update_mempools 0 remotes
    
   let interrupted_bool = ref false
   let interrupted_mvar = Lwt_mvar.create_empty()
