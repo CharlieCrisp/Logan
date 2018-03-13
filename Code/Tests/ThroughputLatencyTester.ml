@@ -64,7 +64,7 @@ let rec test_blockchain_increasing inc_time rates =
         itr := !itr + 1;
         test_blockchain_increasing inc_time rates)
 
-let rates = List.map (fun x -> 1.0 /. x) [1.0;3.0;5.0;7.0;9.0;11.0;13.0;15.0;17.0;19.0;21.0;23.0;25.0;27.0;29.0;31.0;33.0;35.0;37.0;39.0]
+let rates = List.map (fun x -> 1.0 /. x) [1.0;2.0;3.0;4.0;5.0;6.0;7.0;8.0;9.0;10.0]
 (*first arg is the rate, second is the test duration*)
 let rates = List.map (fun x -> (x, 200.0 *. x)) rates
 
