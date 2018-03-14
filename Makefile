@@ -23,3 +23,6 @@ clean:
 	@rm -rf /tmp/ezirminl
 	@rm -rf ./bin
 	@rm ./*.log
+
+clear: 
+	@rm -rf /tmp/ezirminl
