@@ -60,7 +60,7 @@ module Make (Config: I_Config) : I_Leader = struct
   
   (*This function gets new updates from the leaders mempool so they can be added to the blockchain*)
   (*Earliest messages will appear first in resulting list*)
-  let get_new_mempool_updates () = 
+  let get_new_updates () = 
     let rec get_with_cursor latest_known new_curs item_acc = ( 
       Lwt.return @@ IrminLogMem.is_earlier latest_known ~than:new_curs >>= function
         | Some(true) -> IrminLogMem.read ~num_items:1 new_curs >>= (function 
@@ -82,7 +82,7 @@ module Make (Config: I_Config) : I_Leader = struct
     with 
      | _ -> Logger.info "Error while pulling from remote"; Lwt.return ()
 
-  let update_from_part_mempool () = 
+  let update_mem_from_local_part () = 
     let rec get_with_cursor latest_known new_curs item_acc = ( 
       Lwt.return @@ IrminLogPartMem.is_earlier latest_known ~than:new_curs >>= function
         | Some(true) -> IrminLogPartMem.read ~num_items:1 new_curs >>= (function 
@@ -122,30 +122,26 @@ module Make (Config: I_Config) : I_Leader = struct
       | _ -> Lwt.return []
 
   let rec run_leader () = 
-    match !interrupted_bool with
-    | true -> Lwt_mvar.put interrupted_mvar true >>= fun _ -> Lwt.return ()
-    | false -> (
-      update_from_part_mempool() >>= fun _ ->
-      update_mempool() >>= fun _ ->
-      get_new_mempool_updates() >>= function
-      | [] -> Lwt_unix.sleep 1.0 >>= fun _ ->
-        run_leader ()
-      | all_updates -> (let perform_update updates = (  
-        add_list_to_blockchain updates >>= fun _ ->
-        Lwt.return @@ Logger.info (Printf.sprintf "\027[95mFound %i New Updates\027[39m\n%!" (List.length updates))>>= fun _ ->
-        (* print_list() >>= fun _ -> *)
-        IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun new_cursor ->
-        mempool_cursor:= new_cursor;
-        run_leader ()
-        ) in
-        match Config.validator with 
-          | Some(f) -> 
-            let decoded_updates = flat_map (List.map Config.LogCoder.decode_string all_updates) in
-            get_all_transactions_from_blockchain() >>= fun blockchain ->
-            let new_updates = f blockchain decoded_updates in
-            let new_string_updates = List.map (Config.LogCoder.encode_string) new_updates in 
-            perform_update new_string_updates
-          | None -> perform_update all_updates))
+    if !interrupted_bool then Lwt_mvar.put interrupted_mvar true >>= fun _ -> Lwt.return () else
+    update_mem_from_local_part() >>= fun _ ->
+    update_mempool() >>= fun _ ->
+    get_new_updates() >>= fun all_updates ->
+    if all_updates = [] then Lwt_unix.sleep 1.0 >>= run_leader else
+    let perform_update updates = (  
+      add_list_to_blockchain updates >>= fun _ ->
+      Lwt.return @@ Logger.info (Printf.sprintf "\027[95mFound %i New Updates\027[39m\n%!" (List.length updates))>>= fun _ ->
+      IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun new_cursor ->
+      mempool_cursor:= new_cursor;
+      run_leader ()
+      ) in
+    match Config.validator with 
+      | Some(f) -> 
+        let decoded_updates = flat_map (List.map Config.LogCoder.decode_string all_updates) in
+        get_all_transactions_from_blockchain() >>= fun blockchain ->
+        let new_updates = f blockchain decoded_updates in
+        let new_string_updates = List.map (Config.LogCoder.encode_string) new_updates in 
+        perform_update new_string_updates
+      | None -> perform_update all_updates
   
   let fail_nicely str = interrupted_bool := true;
     run (Lwt_mvar.take interrupted_mvar >>= fun _ -> 
@@ -181,9 +177,8 @@ module Make (Config: I_Config) : I_Leader = struct
     register_handlers();  
     add_genesis_and_update_cursor() >>= 
     add_part_genesis_and_cursor >>=
-    get_new_mempool_updates >>= (function 
-      | [] -> Lwt.return ()
-      | updates -> add_list_to_blockchain updates) >>= fun _ -> 
-        Lwt.return (fun () -> run_leader())
+    get_new_updates >>= fun updates ->
+    add_list_to_blockchain updates >>= fun _ -> 
+    Lwt.return (fun () -> run_leader())
 end;;
   
