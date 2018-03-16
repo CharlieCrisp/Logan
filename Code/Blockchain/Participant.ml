@@ -54,7 +54,7 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
       IrminLogMem.get_branch mempool_repo "internal" >>= fun ib ->
       IrminLogMem.Sync.pull remote_mem mempool_master_branch `Merge >>= fun _ ->
       IrminLogMem.Sync.pull remote_mem ib `Merge
-    | _ -> Lwt.return `Error
+    | None -> Lwt.return `Ok
 
   let rec flat_map = function 
     | [] -> []
@@ -87,7 +87,7 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
     match Config.leader_uri with
       | None -> add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok
       | _ -> Lwt.catch 
-        (fun _ -> pull_mem) 
+        (fun _ -> Printf.printf "adding message"; pull_mem) 
         (fun _ -> Lwt.return `Error) >>= (function
           | `Ok -> add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok
           | _ -> Lwt.return `Could_Not_Pull_From_Remote)
