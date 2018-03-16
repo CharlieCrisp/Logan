@@ -51,7 +51,6 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
 
   let pull_mem = match remote_mem_opt with
     | Some(remote_mem) -> 
-      Printf.printf "Pulling from leader";
       IrminLogMem.get_branch mempool_repo "internal" >>= fun ib ->
       IrminLogMem.Sync.pull remote_mem mempool_master_branch `Merge >>= fun _ ->
       IrminLogMem.Sync.pull remote_mem ib `Merge
