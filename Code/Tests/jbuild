@@ -1,7 +1,7 @@
 (jbuild_version 1)
 
 (executables
- ((names (ThroughputLatencyTester TestLeader GatherLeaderResults GatherNoRemResults AddNumberToBlockchain))
-  (modules (ThroughputLatencyTester TestLeader GatherLeaderResults GatherNoRemResults AddNumberToBlockchain))
+ ((names (ThroughputLatencyTester TestLeader GatherLeaderResults GatherNoRemResults AddNumberToBlockchain PrintBlockchains))
+  (modules (ThroughputLatencyTester TestLeader GatherLeaderResults GatherNoRemResults AddNumberToBlockchain PrintBlockchains))
   (modes (native))
   (libraries (lwt.unix ezirmin tc lwt ezjsonm core_extended ptime logstringcoder))))

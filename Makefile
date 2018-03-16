@@ -11,12 +11,14 @@ test:
 	@jbuilder build Code/Tests/GatherLeaderResults.exe
 	@jbuilder build Code/Tests/GatherNoRemResults.exe
 	@jbuilder build Code/Tests/AddNumberToBlockchain.exe
+	@jbuilder build Code/Tests/PrintBlockchains.exe
 	@mkdir -p bin
 	@mv _build/default/Code/Tests/ThroughputLatencyTester.exe bin/ThroughputLatencyTester.exe
 	@mv _build/default/Code/Tests/TestLeader.exe bin/TestLeader.exe
 	@mv _build/default/Code/Tests/GatherLeaderResults.exe bin/GatherLeaderResults.exe
 	@mv _build/default/Code/Tests/GatherNoRemResults.exe bin/GatherNoRemResults.exe
 	@mv _build/default/Code/Tests/AddNumberToBlockchain.exe bin/AddNumberToBlockchain.exe
+	@mv _build/default/Code/Tests/PrintBlockchains.exe bin/PrintBlockchains.exe
 
 clean:
 	@jbuilder clean
