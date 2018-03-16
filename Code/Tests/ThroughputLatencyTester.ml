@@ -1,4 +1,7 @@
-(*bin/lead -r remoteuser@remotehost -i 1 -s 2018031233300*)
+(*
+Add transactions to the blockchain at an increasing rate
+bin/lead -r remoteuser@remotehost -i 1 -s 2018031233300
+*)
 
 open Lwt.Infix
 open Ptime

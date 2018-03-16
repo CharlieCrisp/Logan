@@ -1,4 +1,7 @@
-(*bin/lead -r remoteuser@remotehost -i 1 -s 2018031233300*)
+(*
+This generates an executable which will add a specified number of transactions to the blockchain (mempool) with no delay in between
+bin/AddNumberToBlockchain -r remoteuser@remotehost -i 1 -s 2018031233300 -n 1000
+*)
 
 open Lwt.Infix
 open Ptime

@@ -1,3 +1,7 @@
+(*
+This exe runs a Leader node which uses the LogStringCoder built for testing
+*)
+
 open Lwt.Infix
 let format_remote str = let value = Printf.sprintf "git+ssh://%s/tmp/ezirminl/part/mempool" str in
   Printf.printf "Using remote: %s\n%!" value; value

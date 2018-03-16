@@ -1,3 +1,8 @@
+(*
+This generates an executable which is used to Gather results from a local blockchain leader.
+Results are written to output.log and can be parsed by matlab scripts
+*)
+
 open Lwt.Infix
 module Logger = Logger.Logger
 

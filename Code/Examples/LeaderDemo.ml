@@ -1,3 +1,9 @@
+(*
+This class demonstrates how a blockchain leader may be used 
+In this example, a list of remote participants is read from the command line
+Therefore, this can be used as such... bin/LeaderDemo user1@host1 user2@host2
+*)
+
 open Lwt.Infix
 
 let format_remote str = let value = Printf.sprintf "git+ssh://%s/tmp/ezirminl/part/mempool" str in
