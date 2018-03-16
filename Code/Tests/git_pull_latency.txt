@@ -4,4 +4,7 @@ size-of-blockchain git-pull-latency(with-updates) git-pull-latency(with-no-new-u
 700 3.759 1.386
 1000 3.925 1.388
 1300 4.050 1.440
+2000 6.244 1.461
+4000 6.328 1.419
+6000
 8000 37.180 1.515
