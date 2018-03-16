@@ -19,14 +19,15 @@ let rec print_list list = match list with
   | [] -> Lwt.return @@ ()
 
 let print_list () = Lwt.return @@ Printf.printf "\n\027[92m-----Start Block-----\027[32m\n" >>= fun _ ->
-  IrminLogBlock.read_all blockchain_master_branch [] >>= fun list ->
-  print_list list >>= fun _ ->
+  IrminLogBlock.read_all blockchain_master_branch [] >>= fun list1 ->
+  print_list list1 >>= fun _ ->
   Lwt.return @@ Printf.printf "\n\027[93m-----Start MemPo-----\027[33m\n" >>= fun _ ->
-  IrminLogMem.read_all mempool_master_branch [] >>= fun list ->
-  print_list list >>= fun _ ->
+  IrminLogMem.read_all mempool_master_branch [] >>= fun list2 ->
+  print_list list2 >>= fun _ ->
   Lwt.return @@ Printf.printf "\n\027[91m------End MemPo------\027[39m\n\n%!" >>= fun _ ->
-  IrminLogLeadMem.read_all lead_mempool_master_branch [] >>= fun list ->
-  print_list list >>= fun _ ->
-  Lwt.return @@ Printf.printf "\n\027[91m------End MemPo------\027[39m\n\n%!";;
+  IrminLogLeadMem.read_all lead_mempool_master_branch [] >>= fun list3 ->
+  print_list list3 >>= fun _ ->
+  Printf.printf "\n\027[91m------End MemPo------\027[39m\n\n%!";
+  Lwt.return @@Printf.printf "Blockchain: %i, Part Mempool: %i, Lead Mempool: %i\n%!" (List.length list1) (List.length list2) (List.length list3);;
 
   Lwt_main.run @@ print_list();;
