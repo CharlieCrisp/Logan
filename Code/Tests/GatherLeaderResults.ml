@@ -53,23 +53,3 @@ let log_list () =
   Lwt.return @@ log_all_matching mempool_list blockchain_list;;
 
 Lwt_main.run @@ log_list();;
-
-(* This is optional debug code to print out the contents of the blockchain/mempools after finishing data gathering *)
-
-(* let rec print_list list = match list with 
-  | (x::[]) -> Lwt.return @@ Printf.printf "%s%!" x
-  | (x::xs) -> Lwt.return @@ Printf.printf "%s\n%!" x >>= fun _ -> print_list xs
-  | [] -> Lwt.return @@ ()
-
-let print_list () = Lwt.return @@ Printf.printf "\n\027[92m-----Start Block-----\027[32m\n" >>= fun _ ->
-  IrminLogBlock.read_all blockchain_master_branch [] >>= fun list ->
-  print_list list >>= fun _ ->
-  Lwt.return @@ Printf.printf "\n\027[93m-----Start MemPo-----\027[33m\n" >>= fun _ ->
-  IrminLogMem.read_all mempool_master_branch [] >>= fun list ->
-  print_list list >>= fun _ ->
-  Lwt.return @@ Printf.printf "\n\027[91m------End MemPo------\027[39m\n\n%!" >>= fun _ ->
-  IrminLogLeadMem.read_all lead_mempool_master_branch [] >>= fun list ->
-  print_list list >>= fun _ ->
-  Lwt.return @@ Printf.printf "\n\027[91m------End MemPo------\027[39m\n\n%!";;
-
-  Lwt_main.run @@ print_list();; *)
