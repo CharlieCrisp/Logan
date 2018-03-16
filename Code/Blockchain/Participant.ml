@@ -42,14 +42,14 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
     | Some(uri) -> Some(IrminLogBlock.Sync.remote_uri (Printf.sprintf "git+ssh://%s/tmp/ezirminl/lead/blockchain" uri))
     | None -> None
 
-  let pull_block = match remote_block_opt with 
+  let pull_block () = match remote_block_opt with 
     | Some(remote_block) ->
       IrminLogBlock.get_branch blockchain_repo "internal" >>= fun ib ->
       IrminLogBlock.Sync.pull remote_block blockchain_master_branch `Merge >>= fun _ ->
       IrminLogBlock.Sync.pull remote_block ib `Merge
     | _ -> Lwt.return `Error
 
-  let pull_mem() = match remote_mem_opt with
+  let pull_mem () = match remote_mem_opt with
     | Some(remote_mem) -> 
       IrminLogMem.get_branch mempool_repo "internal" >>= fun ib ->
       IrminLogMem.Sync.pull remote_mem mempool_master_branch `Merge >>= fun _ ->
@@ -62,7 +62,7 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
     | (None::xs) -> flat_map xs
 
   let get_all_transactions_from_blockchain () = 
-    pull_block >>= fun _ ->
+    pull_block() >>= fun _ ->
     IrminLogBlock.get_cursor blockchain_master_branch [] >>= function 
       | Some(cursor) -> IrminLogBlock.read_all blockchain_master_branch [] >>= (function encoded_list ->
         let list = (List.map (Config.LogCoder.decode_string) encoded_list) in 
@@ -70,7 +70,7 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
       | _ -> Lwt.return `Error
 
   let get_transactions_from_blockchain n = 
-    pull_block >>= fun _ ->
+    pull_block() >>= fun _ ->
     IrminLogBlock.get_cursor blockchain_master_branch [] >>= function 
       | Some(cursor) -> IrminLogBlock.read cursor n >>= (function
         | (encoded_list, _) -> let list = (List.map (Config.LogCoder.decode_string) encoded_list) in 
@@ -87,7 +87,7 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
     match Config.leader_uri with
       | None -> add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok
       | _ -> Lwt.catch 
-        (fun _ -> Printf.printf "adding message"; pull_mem()) 
+        (fun _ -> pull_mem()) 
         (fun _ -> Lwt.return `Error) >>= (function
           | `Ok -> add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok
           | _ -> Lwt.return `Could_Not_Pull_From_Remote)
