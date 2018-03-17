@@ -62,18 +62,21 @@ module Make (Config: I_Config) : I_Leader = struct
   (*This function gets new updates from the leaders mempool so they can be added to the blockchain*)
   (*Earliest messages will appear first in resulting list*)
   let get_new_updates () = 
-    let rec get_with_cursor earlier_curs later_curs item_acc = ( 
-      Lwt.return @@ IrminLogMem.is_earlier earlier_curs ~than:later_curs >>= function
-        | Some(true) -> IrminLogMem.read ~num_items:1 later_curs >>= (function 
-          | ([item], Some(new_cursor)) -> get_with_cursor earlier_curs new_cursor (item::item_acc)
+    let rec get_with_cursor earlier_curs later_curs scanning_curs item_acc = ( 
+      let too_early = IrminLogMem.is_earlier scanning_curs ~than:earlier_curs in 
+      let not_too_late = IrminLogMem.is_earlier scanning_curs ~than:later_curs in
+      match too_early, not_too_late with
+        | Some(false), Some(false) -> IrminLogMem.read ~num_items:1 scanning_curs >>= (function 
+          | (_, Some(new_scanning_cursor)) -> get_with_cursor earlier_curs later_curs new_scanning_cursor item_acc
+          | _ -> Lwt.return item_acc)
+        | Some(false), Some(true) -> IrminLogMem.read ~num_items:1 scanning_curs >>= (function 
+          | ([item], Some(new_scanning_cursor)) -> get_with_cursor earlier_curs later_curs new_scanning_cursor (item::item_acc)
           | _ -> Lwt.return item_acc)
         | _ -> Lwt.return item_acc) in
       (*Logger.info (Printf.sprintf "Starting retrieval of new mempool updates at time %f" (Ptime.to_float_s (Ptime_clock.now())));*)
-      match (!mempool_cursor_earlier, !mempool_cursor_later) with
-        | (Some(earlier_curs), Some(later_curs)) -> get_with_cursor earlier_curs later_curs []
-        | (None, Some(new_curs)) -> IrminLogPartMem.read ~num_items: 1 new_curs >>= (function 
-          | (xs, _) -> (*Logger.info (Printf.sprintf "Finishing retrieval of new mempool updates at time %f\n" (Ptime.to_float_s (Ptime_clock.now())));*)
-            Lwt.return xs)
+      IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun newest_cursor_opt ->
+      match (!mempool_cursor_earlier, !mempool_cursor_later, newest_cursor_opt) with
+        | (Some(earlier_curs), Some(later_curs), Some(newest_curs)) -> get_with_cursor earlier_curs later_curs newest_curs []
         | _ -> (*Logger.info (Printf.sprintf "Finishing retrieval of new mempool updates at time %f\n" (Ptime.to_float_s (Ptime_clock.now())));*) Lwt.return []
 
   let update_from_remote remote = 
