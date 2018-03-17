@@ -47,7 +47,7 @@ module Make (Config: I_Config) : I_Leader = struct
     match txn_opt with 
       | Some(txn) -> let txn_string = Config.LogCoder.encode_string txn in
         IrminLogBlock.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path txn_string
-      | _ -> Printf.printf "Couldn't reconstruct log item"; Lwt.return ()
+      | _ -> Printf.printf "Couldn't reconstruct log item\n%!"; Lwt.return ()
   let add_list_to_blockchain list = 
     Logger.info (Printf.sprintf "Starting to add to blockchain at time %f" (Ptime.to_float_s (Ptime_clock.now()))); 
     Lwt_list.iter_s add_txn_to_blockchain list >>= fun _ ->
@@ -129,8 +129,7 @@ module Make (Config: I_Config) : I_Leader = struct
 
   let print_mem () = 
     IrminLogMem.read_all mempool_master_branch ~path:path >>= fun all ->
-    List.iter (fun thing -> Logger.info thing) all;
-    Lwt.return @@ Printf.printf "\n\n\n\n\n"
+    Lwt.return @@ List.iter (fun thing -> Logger.info thing) all
 
   let unwrap = function 
     | Some (x) -> x
