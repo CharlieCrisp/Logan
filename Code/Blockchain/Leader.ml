@@ -188,14 +188,19 @@ module Make (Config: I_Config) : I_Leader = struct
       | curs -> mempool_cursor_earlier := curs; mempool_cursor_later := curs;
         Lwt.return ()
 
-  let add_part_genesis_and_cursor () = IrminLogPartMem.get_cursor mempool_master_branch ~path:path >>= function
+  let add_part_genesis_and_cursor () = IrminLogPartMem.get_cursor part_mempool_master_branch ~path:path >>= function
     | None -> IrminLogPartMem.append ~message:"Entry added to the blockchain" part_mempool_master_branch ~path:path "Genesis Commit" >>= fun _ ->
-      IrminLogMem.get_cursor mempool_master_branch ~path:path >>= (function 
-        | None -> raise Could_Not_Initialise_Blockchain
-        | curs -> part_mempool_cursor := curs;
-          Lwt.return ())
-    | curs -> part_mempool_cursor := curs;
-      Lwt.return ()
+      IrminLogPartMem.get_cursor mempool_master_branch ~path:path >>= (function
+      | None -> raise Could_Not_Initialise_Blockchain
+      | curs -> part_mempool_cursor := curs;
+        Lwt.return ())
+    | Some(curs) -> part_mempool_cursor := Some(curs);
+      IrminLogPartMem.read curs ~num_items:1 >>= (function
+        | x::_, _ when x = "Genesis Commit" -> Lwt.return ()
+        | _ -> IrminLogPartMem.append ~message:"Entry added to the blockchain" part_mempool_master_branch ~path:path "Genesis Commit" >>= fun _ ->
+          Lwt.return ()
+      ) >>= 
+      Lwt.return
 
   let init_leader () = 
     Logger.info "Starting Leader";
