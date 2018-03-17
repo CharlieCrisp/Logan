@@ -132,16 +132,6 @@ module Make (Config: I_Config) : I_Leader = struct
         Lwt.return (flat_map list))
       | _ -> Lwt.return []
 
-  let print update = let str = Config.LogCoder.encode_string update in
-    Printf.printf "%s\n%!" str
-
-  let print_mem () = 
-    IrminLogMem.read_all mempool_master_branch ~path:path >>= fun all ->
-    Lwt.return @@ List.iter (fun thing -> Logger.info thing) all
-
-  let unwrap = function 
-    | Some (x) -> x
-
   let rec run_leader () = 
     if !interrupted_bool then Lwt_mvar.put interrupted_mvar true >>= fun _ -> Lwt.return () else
     update_mem_from_local_part() >>= fun _ ->
@@ -149,10 +139,6 @@ module Make (Config: I_Config) : I_Leader = struct
     get_new_updates() >>= fun all_updates -> 
     mempool_cursor_earlier := !mempool_cursor_later;
     mempool_cursor_later := (run @@ (IrminLogMem.get_cursor mempool_master_branch ~path:path));
-    IrminLogMem.read (unwrap !mempool_cursor_earlier) ~num_items:1 >>= fun (x_earlier::_, _)->
-    IrminLogMem.read (unwrap !mempool_cursor_later) ~num_items:1 >>= fun (x_later::_, _)->
-    Logger.info (Printf.sprintf "Earlier cursor:%s\n Later cursor: %s\n Mempool: \n" x_earlier x_later);
-    print_mem () >>= fun _ ->
     if all_updates = [] then Lwt_unix.sleep 1.0 >>= run_leader else
     let perform_update updates = (  
       add_list_to_blockchain updates >>= fun _ ->
