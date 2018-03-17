@@ -62,14 +62,22 @@ module Make (Config: I_Config) : I_Leader = struct
   (*This function gets new updates from the leaders mempool so they can be added to the blockchain*)
   (*Earliest messages will appear first in resulting list*)
   let get_new_updates () = 
+    let earlier_or_equal cursor1 ~than:cursor2 = (
+      match IrminLogMem.is_earlier cursor1 ~than:cursor2, IrminLogMem.is_earlier cursor2 ~than:cursor1 with
+        | Some(true), _ -> Some(true)
+        | Some(false), Some(false) -> Some(true)
+        | _ -> Some(false)) in
     let rec get_with_cursor earlier_curs later_curs scanning_curs item_acc = ( 
-      let too_early = IrminLogMem.is_earlier scanning_curs ~than:earlier_curs in 
-      let not_too_late = IrminLogMem.is_earlier scanning_curs ~than:later_curs in
-      match too_early, not_too_late with
-        | Some(false), Some(false) -> IrminLogMem.read ~num_items:1 scanning_curs >>= (function 
+      (*We add whatever our latest pointer is pointing to up until (but not including) what our earlier pointer points to*)
+      (*In the case that we've already added our latest pointer item, 
+        our earlier pointer will point to this item too, and this will mean it is not added because it is not late_enough *)
+      let is_early_enough = earlier_or_equal scanning_curs ~than:later_curs in
+      let is_late_enough = IrminLogMem.is_later scanning_curs ~than:earlier_curs in
+      match is_early_enough, is_late_enough with
+        | Some(false), Some(true) -> IrminLogMem.read ~num_items:1 scanning_curs >>= (function 
           | (_, Some(new_scanning_cursor)) -> get_with_cursor earlier_curs later_curs new_scanning_cursor item_acc
           | _ -> Lwt.return item_acc)
-        | Some(false), Some(true) -> IrminLogMem.read ~num_items:1 scanning_curs >>= (function 
+        | Some(true), Some(true) -> IrminLogMem.read ~num_items:1 scanning_curs >>= (function 
           | ([item], Some(new_scanning_cursor)) -> get_with_cursor earlier_curs later_curs new_scanning_cursor (item::item_acc)
           | _ -> Lwt.return item_acc)
         | _ -> Lwt.return item_acc) in
