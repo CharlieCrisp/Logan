@@ -39,6 +39,7 @@ let find_matching item list = let item_decoded = Coder.decode_log_item item in
 
 (*Log pairs of values for matching txns: add time and commit time. I.e. when added to mempool vs blockchain*)
 let rec log_all_matching mempool_list blockchain_list = match mempool_list with 
+  | (x::xs) when x = "Genesis Commit" -> ()
   | (x::xs) -> let opt = find_matching x blockchain_list in (
     match opt with 
       | Some((mempool_item,blockchain_item), new_blockchain) ->
