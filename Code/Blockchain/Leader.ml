@@ -78,7 +78,7 @@ module Make (Config: I_Config) : I_Leader = struct
           | (_, Some(new_scanning_cursor)) -> get_with_cursor earlier_curs later_curs new_scanning_cursor item_acc
           | _ -> Lwt.return item_acc)
         | Some(true), Some(true) -> IrminLogMem.read ~num_items:1 scanning_curs >>= (function 
-          | ([item], Some(new_scanning_cursor)) -> get_with_cursor earlier_curs later_curs new_scanning_cursor (item::item_acc)
+          | ([item], Some(new_scanning_cursor)) when item <> "Genesis Commit" -> get_with_cursor earlier_curs later_curs new_scanning_cursor (item::item_acc)
           | _ -> Lwt.return item_acc)
         | _ -> Lwt.return item_acc) in
       (*Logger.info (Printf.sprintf "Starting retrieval of new mempool updates at time %f" (Ptime.to_float_s (Ptime_clock.now())));*)
@@ -97,7 +97,7 @@ module Make (Config: I_Config) : I_Leader = struct
     let rec get_with_cursor latest_known new_curs item_acc = ( 
       Lwt.return @@ IrminLogPartMem.is_earlier latest_known ~than:new_curs >>= function
         | Some(true) -> IrminLogPartMem.read ~num_items:1 new_curs >>= (function 
-          | ([item], Some(new_cursor)) -> get_with_cursor latest_known new_cursor (item::item_acc)
+          | ([item], Some(new_cursor)) when item <> "Genesis Commit" -> get_with_cursor latest_known new_cursor (item::item_acc)
           | _ -> Lwt.return item_acc)
         | _ -> Lwt.return item_acc) in
     let add_value_to_mempool value = IrminLogMem.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:path value in
@@ -107,8 +107,7 @@ module Make (Config: I_Config) : I_Leader = struct
       | (Some(l_cursor), Some(p_cursor)) -> get_with_cursor l_cursor p_cursor [] >>= fun updates ->
         add_list_to_mempool updates >>= fun _ ->
         Lwt.return @@ (part_mempool_cursor := new_part_cursor)
-      | (None, Some(p_cursor)) -> IrminLogMem.read ~num_items: 1 p_cursor >>= fun (updates, _) ->
-        add_list_to_mempool updates >>= fun _ ->
+      | (None, Some(p_cursor)) ->
         Lwt.return @@ (part_mempool_cursor := new_part_cursor)
       | _ -> Lwt.return ()
 
