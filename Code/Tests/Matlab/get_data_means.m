@@ -20,6 +20,7 @@ for i = 1:size(data,1)-2
     %data is currently cumulative
     throughput = (1 / (t_s2 - t_s1));
     latency = t_e1 - t_s1;
+    
     data_size(result_index) = data_size(result_index) + 1;
     throughput_data(result_index) = throughput_data(result_index) + throughput;
     latency_means(result_index) = latency_means(result_index) + latency;
