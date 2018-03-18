@@ -1,5 +1,5 @@
 format long;
-data = importdata("../../../single_remote_worker.log");
+data = importdata("../../../single_local_worker_1s_delay.log");
 
 [tp, lat_mean, lat_dev] = get_processed_data(data);
 

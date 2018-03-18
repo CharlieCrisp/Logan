@@ -1,70 +1,30 @@
 format long;
-data = importdata("../../../output.log", ' ')
+data = importdata("../../../output.log", ' ');
 %filter NaN rows
 data(any(isnan(data), 2), :) = [];
 data = flipud(data);
 rates = unique(data(:,3));
 result_length = size(rates,1);
 
-latency_means = zeros(1, result_length);
-latency_deviation = zeros(1, result_length);
-throughput_data = zeros(1, result_length);
-data_size = zeros(1, result_length);
- 
-last_rate = 0;
-result_index = 0;
-%Calculate the mean values of the sets of data which are marked with the
-%same throughput rate
-for i = 1:size(data,1)-2
-    current_rate = data(i,3);
-    if last_rate ~= current_rate
-        result_index = result_index + 1;
-        last_rate = current_rate;
-    end
-    t_s1 = data(i, 1);
-    t_e1 = data(i, 2);
-    t_s2 = data(i + 1, 1);
-    data_size(result_index) = data_size(result_index) + 1;
-    %data is currently cumulative
-    throughput_data(result_index) = throughput_data(result_index) + (1 / (t_s2 - t_s1));
-    latency_means(result_index) = latency_means(result_index) + t_e1 - t_s1;
-end
+[latency_means, throughput_data] = get_data_means(data, result_length);
 
-%divide cumulative data to get averate
-throughput_data = throughput_data ./ data_size;
-latency_means = latency_means ./ data_size;
+[latency_deviation_pos, latency_deviation_neg] = get_data_std(data, latency_means, result_length);
 
-last_rate = 0;
-result_index = 0;
-%Calculate the standard deviation values 
-for i = 1:size(data,1)-2
-    current_rate = data(i,3);
-    if last_rate ~= current_rate
-        result_index = result_index + 1;
-        last_rate = current_rate;
-    end
-    t_s1 = data(i, 1);
-    t_e1 = data(i, 2);
-    latency= t_e1 - t_s1;
-    %data is currently cumulative
-    latency_deviation(result_index) = latency_deviation(result_index) + ... 
-        (latency - latency_means(result_index))^2;
-end
+data = remove_outliers(data, latency_means, latency_deviation_neg, latency_deviation_pos);
 
-latency_deviation = sqrt(latency_deviation ./ (data_size - 1));
-figure
-errorbar(throughput_data, latency_means, latency_deviation);
-xlabel({"Throughput";"transactions s^{-1}";""});
-ylabel({"Latency";"s"});
+[latency_means, throughput_data] = get_data_means(data, result_length);
+
+[latency_deviation_pos, latency_deviation_neg] = get_data_std(data, latency_means, result_length);
 
 figure
-e = errorbar(throughput_data, latency_means, latency_deviation);
+e = errorbar(throughput_data, latency_means, latency_deviation_neg, latency_deviation_pos, 'x');
 e.LineStyle = "none";
 
 X = [ones(result_length,1) (throughput_data')];
 b = X \ (latency_means');
 ycalc = X * b;
 hold on
+clear plot
 plot(throughput_data, ycalc);
 xlabel({"Throughput";"transactions s^{-1}";""});
 ylabel({"Latency";"s"});
