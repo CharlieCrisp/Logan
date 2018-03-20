@@ -26,17 +26,24 @@ module Make (Config: I_Config) : I_Leader = struct
   let blockchain_master_branch = run @@ IrminLogBlock.master blockchain_repo
   let mempool_master_branch = run @@ IrminLogMem.master mempool_repo
   let part_mempool_master_branch = run @@ IrminLogPartMem.master mempool_local_repo
-  let remotes = List.map (fun str -> (IrminLogMem.Sync.remote_uri str, str)) Config.remotes
   let internal_branch = run @@ IrminLogMem.get_branch mempool_repo "internal"
-  let mempool_cursor_earlier: IrminLogMem.cursor option ref = ref None
-  let mempool_cursor_later: IrminLogMem.cursor option ref = ref None
   let part_mempool_cursor: IrminLogPartMem.cursor option ref = ref None
+  let remotes_branches_names = let full_uris = List.map (fun str -> (Printf.sprintf "git+ssh://%s/tmp/ezirminl/part/mempool" str, str)) Config.remotes in
+   List.map (fun (str1,str2) -> (IrminLogMem.Sync.remote_uri str1, run (IrminLogMem.get_branch mempool_repo str2), str2)) full_uris
+  let latest_cursors: IrminLogMem.cursor list ref = ref []
+  let buffered_updates = ref []
+  let updates_to_be_added = ref []
+
   exception Validator_Not_Supplied
   exception Could_Not_Initialise_Blockchain
+  exception Option_Unwrapping
 
   let ignore_lwt t = t >|= fun _ -> ()
+  let get = function 
+    | Some x -> x
+    | None -> raise Option_Unwrapping
 
-  let pull_mem remote_mem = Lwt.join [ignore_lwt @@ IrminLogMem.Sync.pull remote_mem internal_branch `Merge;
+  let pull_mem remote_mem branch = Lwt.join [ignore_lwt @@ IrminLogMem.Sync.pull remote_mem internal_branch `Merge;
     ignore_lwt @@ IrminLogMem.Sync.pull remote_mem mempool_master_branch `Merge]
 
   let add_value_to_blockchain value = 
@@ -61,72 +68,109 @@ module Make (Config: I_Config) : I_Leader = struct
   
   (*This function gets new updates from the leaders mempool so they can be added to the blockchain*)
   (*Earliest messages will appear first in resulting list*)
-  let get_new_updates () = 
-    let earlier_or_equal cursor1 ~than:cursor2 = (
-      match IrminLogMem.is_earlier cursor1 ~than:cursor2, IrminLogMem.is_earlier cursor2 ~than:cursor1 with
-        | Some(true), _ -> Some(true)
-        | Some(false), Some(false) -> Some(true)
-        | _ -> Some(false)) in
-    let rec get_with_cursor earlier_curs later_curs scanning_curs item_acc = ( 
-      (*We add whatever our latest pointer is pointing to up until (but not including) what our earlier pointer points to*)
-      (*In the case that we've already added our latest pointer item, 
-        our earlier pointer will point to this item too, and this will mean it is not added because it is not late_enough *)
-      let is_early_enough = earlier_or_equal scanning_curs ~than:later_curs in
-      let is_late_enough = IrminLogMem.is_later scanning_curs ~than:earlier_curs in
-      match is_early_enough, is_late_enough with
-        | Some(false), Some(true) -> IrminLogMem.read ~num_items:1 scanning_curs >>= (function 
-          | (_, Some(new_scanning_cursor)) -> get_with_cursor earlier_curs later_curs new_scanning_cursor item_acc
-          | _ -> Lwt.return item_acc)
-        | Some(true), Some(true) -> IrminLogMem.read ~num_items:1 scanning_curs >>= (function 
-          | ([item], Some(new_scanning_cursor)) when item <> "Genesis Commit" -> get_with_cursor earlier_curs later_curs new_scanning_cursor (item::item_acc)
-          | _ -> Lwt.return item_acc)
-        | _ -> Lwt.return item_acc) in
-      (*Logger.info (Printf.sprintf "Starting retrieval of new mempool updates at time %f" (Ptime.to_float_s (Ptime_clock.now())));*)
-      IrminLogMem.get_cursor mempool_master_branch ~path:path >>= fun newest_cursor_opt ->
-      match (!mempool_cursor_earlier, !mempool_cursor_later, newest_cursor_opt) with
-        | (Some(earlier_curs), Some(later_curs), Some(newest_curs)) -> get_with_cursor earlier_curs later_curs newest_curs []
-        | _ -> (*Logger.info (Printf.sprintf "Finishing retrieval of new mempool updates at time %f\n" (Ptime.to_float_s (Ptime_clock.now())));*) Lwt.return []
+  let get_single_mempool_updates branch latest_known_cursor = 
+    let rec get_with_cursor acc = (function 
+      | Some(cursor) -> 
+        if get(IrminLogMem.is_later cursor ~than:latest_known_cursor) then
+          IrminLogMem.read cursor ~num_items:1 >>= (function
+            | ([x], Some(curs)) -> get_with_cursor ((x, get(IrminLogMem.at_time cursor))::acc) (Some(curs))
+            | ([x], None) -> Lwt.return ((x, get(IrminLogMem.at_time cursor))::acc)
+            | _ -> Lwt.return acc )
+        else 
+          (*We've gone too far back!*)
+          Lwt.return acc
+      | None -> Lwt.return acc)
+    in 
+      IrminLogMem.get_cursor branch ~path:path >>= get_with_cursor [] 
 
-  let update_from_remote remote = 
+  let get_local_part_updates () = 
+    let rec get_with_cursor new_curs item_acc = ( 
+      Lwt.return @@ IrminLogPartMem.is_earlier (get !part_mempool_cursor) ~than:new_curs >>= function
+        | Some(true) -> IrminLogPartMem.read ~num_items:1 new_curs >>= (function 
+          | ([item], Some(new_cursor)) when item <> "Genesis Commit" -> get_with_cursor new_cursor ((item, get (IrminLogPartMem.at_time new_curs))::item_acc)
+          | _ -> Lwt.return item_acc)
+        | _ -> Lwt.return item_acc) 
+    in
+      IrminLogPartMem.get_cursor part_mempool_master_branch ~path:path >>= function 
+        | None -> Lwt.return ([], None)
+        | Some(cursor) -> get_with_cursor cursor [] >>= fun items -> Lwt.return (items, Some(cursor))
+
+  let rec insert_list_into_list greater_than = function 
+    | [], [] -> []
+    | (x::xs), (y::ys) -> if greater_than x y then 
+        y::(insert_list_into_list greater_than (x::xs, ys)) 
+      else 
+        x::(insert_list_into_list greater_than (xs, y::ys))
+    | [], ys -> ys
+    | xs, [] -> xs
+  
+  let compare_tuples (_,x) (_,y) = Ptime.is_later x y
+  let rec split_list greater_than acc = function 
+    | (x::xs) -> if greater_than x then 
+        (List.rev acc, x::xs)
+      else 
+        split_list greater_than (x::acc) xs
+    | [] -> (List.rev acc, []) 
+
+  (*Returns the cursor to the latest item it scanned from the participant mempool*)
+  let process_new_updates () = 
+    let rec get_all_rem_updates acc branches latest_known_cursors = (match branches, latest_known_cursors with
+      | ((_,branch,_)::bs), (lkc::cursors) -> get_single_mempool_updates branch lkc >>= fun updates ->
+        get_all_rem_updates (insert_list_into_list compare_tuples (updates, acc)) bs cursors
+      | _ -> Lwt.return acc)
+    in 
+    let get_all_updates () = (
+      get_all_rem_updates [] remotes_branches_names !latest_cursors >>= fun rem_updates ->  
+      get_local_part_updates() >>= fun (loc_updates, latest_known_part_mempool) ->
+      Lwt.return @@ (insert_list_into_list compare_tuples (rem_updates, loc_updates), latest_known_part_mempool)) 
+    in
+      get_all_updates() >>= fun (newupdates, latest_known_part_mempool) ->
+      let items = List.rev (!updates_to_be_added) in 
+      match items with 
+        | [] -> buffered_updates := newupdates; Lwt.return latest_known_part_mempool
+        | x::_ -> (*x is the latest item in updates_to_be_added*)
+          (*find all the missed transactions andmerge into updates_to_be_added. put rest in buffered updates *)
+          let newuptoadd, newup = split_list (fun y -> not (compare_tuples x y)) [] newupdates in
+          updates_to_be_added := insert_list_into_list compare_tuples (!updates_to_be_added,newuptoadd);
+          buffered_updates := newup;
+          Lwt.return latest_known_part_mempool
+
+  let update_from_remote remote branch = 
     try 
-      pull_mem remote >>= fun _ -> Lwt.return ()
+      pull_mem remote branch >>= fun _ -> Lwt.return ()
     with 
      | _ -> Logger.info "Error while pulling from remote"; Lwt.return ()
-
-  let update_mem_from_local_part () = 
-    let rec get_with_cursor latest_known new_curs item_acc = ( 
-      Lwt.return @@ IrminLogPartMem.is_earlier latest_known ~than:new_curs >>= function
-        | Some(true) -> IrminLogPartMem.read ~num_items:1 new_curs >>= (function 
-          | ([item], Some(new_cursor)) when item <> "Genesis Commit" -> get_with_cursor latest_known new_cursor (item::item_acc)
-          | _ -> Lwt.return item_acc)
-        | _ -> Lwt.return item_acc) in
-    let add_value_to_mempool value = IrminLogMem.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:path value in
-    let add_list_to_mempool list = Lwt_list.iter_s add_value_to_mempool list in
-    IrminLogPartMem.get_cursor part_mempool_master_branch ~path:path >>= fun new_part_cursor ->
-    match (!part_mempool_cursor, new_part_cursor) with
-      | (Some(l_cursor), Some(p_cursor)) -> get_with_cursor l_cursor p_cursor [] >>= fun updates ->
-        add_list_to_mempool updates >>= fun _ ->
-        Lwt.return @@ (part_mempool_cursor := new_part_cursor)
-      | (None, Some(p_cursor)) ->
-        Lwt.return @@ (part_mempool_cursor := new_part_cursor)
-      | _ -> Lwt.return ()
 
   (*This will sequentially merge changes from all the mempools in the known remotes*)
   let update_mempool () = 
     let rec update_mempools num = function 
-      | (x,str)::xs -> (*Logger.info (Printf.sprintf "Starting Pull from remote %i at time %f" num (Ptime.to_float_s (Ptime_clock.now())));*)
-        update_from_remote x >>= fun _ ->
+      | (remote, branch, name)::xs -> (*Logger.info (Printf.sprintf "Starting Pull from remote %i at time %f" num (Ptime.to_float_s (Ptime_clock.now())));*)
+        update_from_remote remote branch >>= fun _ ->
         (*Logger.info (Printf.sprintf "Finishing Pull from remote %i at time %f" num (Ptime.to_float_s (Ptime_clock.now()))); *)
         update_mempools (num+1) xs;
       | [] -> Lwt.return ()
     in 
       let time1 = (Ptime.to_float_s(Ptime_clock.now())) in
-      update_mempools 0 remotes >>= fun _ ->
+      update_mempools 0 remotes_branches_names >>= fun _ ->
       Logger.logg time1 (Ptime.to_float_s (Ptime_clock.now()));
       Lwt.return ()
+
    
   let interrupted_bool = ref false
   let interrupted_mvar = Lwt_mvar.create_empty()
+
+  let update_cursors latest_known_part_cursor = 
+    part_mempool_cursor := latest_known_part_cursor;
+    IrminLogPartMem.read (get(!part_mempool_cursor)) ~num_items:1  >>= (function 
+    | ([],_) -> Lwt.return ()
+    | thing -> Lwt.return ()) >>= fun _ ->
+    let rec get_updated_cursors acc = function 
+      | [] -> Lwt.return acc
+      | (_,branch,_)::xs -> get_updated_cursors (get(run @@ IrminLogMem.get_cursor branch ~path:path)::acc) xs
+    in 
+      get_updated_cursors [] remotes_branches_names >>= fun updated_cursors ->
+      latest_cursors := List.rev updated_cursors;
+      Lwt.return ()
 
   let get_all_transactions_from_blockchain () = 
     IrminLogBlock.get_cursor blockchain_master_branch [] >>= function 
@@ -137,11 +181,12 @@ module Make (Config: I_Config) : I_Leader = struct
 
   let rec run_leader () = 
     if !interrupted_bool then Lwt_mvar.put interrupted_mvar true >>= fun _ -> Lwt.return () else
-    update_mem_from_local_part() >>= fun _ ->
-    update_mempool() >>= fun _ ->
-    get_new_updates() >>= fun all_updates -> 
-    mempool_cursor_earlier := !mempool_cursor_later;
-    mempool_cursor_later := (run @@ (IrminLogMem.get_cursor mempool_master_branch ~path:path));
+    update_mempool() >>= 
+    process_new_updates >>= fun latest_known_part_cursor ->
+    let all_updates = List.map (fun (x,_) -> x) !updates_to_be_added in 
+    updates_to_be_added := !buffered_updates;
+    buffered_updates := [];
+    update_cursors latest_known_part_cursor >>= fun _ ->
     if all_updates = [] then run_leader() else
     let perform_update updates = (  
       add_list_to_blockchain updates >>= fun _ ->
@@ -167,22 +212,23 @@ module Make (Config: I_Config) : I_Leader = struct
     let _ = Lwt_unix.on_signal Sys.sigint (fun _ -> fail_nicely "SIGINT\n") in 
     ()
 
-  let add_genesis_and_update_cursor () = IrminLogMem.get_cursor mempool_master_branch ~path:path >>= function
+  let add_genesis_and_update_cursors () = IrminLogMem.get_cursor mempool_master_branch ~path:path >>= function
       | None -> IrminLogMem.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:path "Genesis Commit" >>= fun _ ->
         IrminLogBlock.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path "Genesis Commit" >>= fun _ ->
-        IrminLogMem.get_cursor mempool_master_branch ~path:path >>= (function 
-          | None -> raise Could_Not_Initialise_Blockchain
-          | curs -> mempool_cursor_earlier := curs; mempool_cursor_later := curs;
-            Lwt.return ())
-      | curs -> mempool_cursor_earlier := curs; mempool_cursor_later := curs;
+        (*Merge genesis block into each remote*)
+        List.iter (fun (_,branch,_) -> run @@ IrminLogMem.merge mempool_master_branch ~into: branch) remotes_branches_names; 
+        (*Get latest cursors for all mempools*)
+        latest_cursors := List.map (fun (rem,bra,name) -> get (run @@ IrminLogMem.get_cursor bra ~path:path)) remotes_branches_names;
+        Lwt.return ()
+      | curs -> latest_cursors := List.map (fun (rem,bra,name) -> get (run @@ IrminLogMem.get_cursor bra ~path:path)) remotes_branches_names;
         Lwt.return ()
 
   let add_part_genesis_and_cursor () = IrminLogPartMem.get_cursor part_mempool_master_branch ~path:path >>= function
     | None -> IrminLogPartMem.append ~message:"Entry added to the blockchain" part_mempool_master_branch ~path:path "Genesis Commit" >>= fun _ ->
-      IrminLogPartMem.get_cursor mempool_master_branch ~path:path >>= (function
-      | None -> raise Could_Not_Initialise_Blockchain
-      | curs -> part_mempool_cursor := curs;
-        Lwt.return ())
+      IrminLogPartMem.get_cursor part_mempool_master_branch ~path:path >>= (function
+        | None -> raise Could_Not_Initialise_Blockchain
+        | curs -> part_mempool_cursor := curs;
+          Lwt.return ())
     | Some(curs) -> part_mempool_cursor := Some(curs);
       IrminLogPartMem.read curs ~num_items:1 >>= (function
         | x::_, _ when x = "Genesis Commit" -> Lwt.return ()
@@ -194,10 +240,8 @@ module Make (Config: I_Config) : I_Leader = struct
   let init_leader () = 
     Logger.info "Starting Leader";
     register_handlers();  
-    add_genesis_and_update_cursor() >>= 
-    add_part_genesis_and_cursor >>=
-    get_new_updates >>= fun updates ->
-    add_list_to_blockchain updates >>= fun _ -> 
-    Lwt.return (fun () -> run_leader())
+    add_genesis_and_update_cursors() >>=
+    add_part_genesis_and_cursor >>= fun _ ->
+    Lwt.return run_leader
 end;;
   
