@@ -45,16 +45,9 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
   let pull_block () = match remote_block_opt with 
     | Some(remote_block) ->
       IrminLogBlock.get_branch blockchain_repo "internal" >>= fun ib ->
-      IrminLogBlock.Sync.pull remote_block blockchain_master_branch `Merge >>= fun _ ->
-      IrminLogBlock.Sync.pull remote_block ib `Merge
+      IrminLogBlock.Sync.pull remote_block blockchain_master_branch `Update >>= fun _ ->
+      IrminLogBlock.Sync.pull remote_block ib `Update
     | _ -> Lwt.return `Error
-
-  let pull_mem () = match remote_mem_opt with
-    | Some(remote_mem) -> 
-      IrminLogMem.get_branch mempool_repo "internal" >>= fun ib ->
-      IrminLogMem.Sync.pull remote_mem mempool_master_branch `Merge >>= fun _ ->
-      IrminLogMem.Sync.pull remote_mem ib `Merge
-    | None -> Lwt.return `Ok
 
   let rec flat_map = function 
     | [] -> []
@@ -84,14 +77,8 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
       IrminLogMem.append ~message:"Entry added to the blockchain" wip_branch ~path:[] message >>= fun _ ->
       IrminLogMem.merge wip_branch ~into:mempool_master_branch in
     let message = Config.LogCoder.encode_string value in 
-    match Config.leader_uri with
-      | None -> add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok
-      | _ -> Lwt.catch 
-        (fun _ -> pull_mem()) 
-        (fun _ -> Lwt.return `Error) >>= (function
-          | `Ok -> add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok
-          | _ -> Lwt.return `Could_Not_Pull_From_Remote)
-
+    add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok
+    
   let add_transaction_to_mempool value =
     match Config.validator with 
       | Some(f) -> (get_all_transactions_from_blockchain() >>= function
