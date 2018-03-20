@@ -1,4 +1,4 @@
-function [data] = remove_outliers(data,means,upper_bounds,lower_bounds)
+function [data] = remove_outliers(data,means,upper_bounds,lower_bounds,result_length)
 %REMOVE_OUTLIERS Summary of this function goes here
 %   Detailed explanation goes here
 last_rate = 0;
@@ -15,6 +15,9 @@ for i = 1:size(data,1)-2
     t_s1 = data(i, 1);
     t_e1 = data(i, 2);
     latency= t_e1 - t_s1;
+    if (result_index > result_length) 
+        break
+    end
     upper = means(result_index) + 1.5 * upper_bounds(result_index);
     lower = means(result_index) - 1.5 * lower_bounds(result_index);
     if latency > upper || latency < lower

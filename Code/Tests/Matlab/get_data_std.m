@@ -20,7 +20,12 @@ for i = 1:size(data,1)-2
     t_s1 = data(i, 1);
     t_e1 = data(i, 2);
     latency= t_e1 - t_s1;
-    
+    t_s2 = data(i+1,1);
+    throughput = (1 / (t_s2 - t_s1));
+    if (result_index > result_length) 
+        break
+    end
+    if not(throughput > 30 || latency > 20)
     if latency >= latency_means(result_index)
         latency_deviation_pos(result_index) = latency_deviation_pos(result_index) + ... 
             (latency - latency_means(result_index))^2;
@@ -29,6 +34,7 @@ for i = 1:size(data,1)-2
         latency_deviation_neg(result_index) = latency_deviation_neg(result_index) + ... 
             (latency - latency_means(result_index))^2;
         latency_neg_size(result_index) = latency_neg_size(result_index) + 1;
+    end
     end
 end
 latency_deviation_pos = sqrt(latency_deviation_pos ./ (latency_pos_size - 1));
