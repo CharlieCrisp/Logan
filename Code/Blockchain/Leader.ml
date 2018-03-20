@@ -29,7 +29,7 @@ module Make (Config: I_Config) : I_Leader = struct
   let internal_branch = run @@ IrminLogMem.get_branch mempool_repo "internal"
   let part_mempool_cursor: IrminLogPartMem.cursor option ref = ref None
   let remotes_branches_names = let full_uris = List.map (fun str -> (Printf.sprintf "git+ssh://%s/tmp/ezirminl/part/mempool" str, str)) Config.remotes in
-   List.map (fun (str1,str2) -> (IrminLogMem.Sync.remote_uri str1, run (IrminLogMem.get_branch mempool_repo str2), str2)) full_uris
+   List.map (fun (str1,str2) -> (IrminLogMem.Sync.remote_uri str1, run (IrminLogMem.get_branch mempool_repo (Str.global_replace (Str.regexp "@")"" str2)), str2)) full_uris
   let latest_cursors: IrminLogMem.cursor list ref = ref []
   let buffered_updates = ref []
   let updates_to_be_added = ref []

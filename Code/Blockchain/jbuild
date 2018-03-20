@@ -4,5 +4,5 @@
  ((name         Blockchain)
   (public_name  blockchain)
   (modules (Leader Participant Blockchain))
-  (libraries (lwt.unix ezirmin tc lwt core ezjsonm logger))))
+  (libraries (lwt.unix ezirmin str tc lwt core ezjsonm logger))))
 
