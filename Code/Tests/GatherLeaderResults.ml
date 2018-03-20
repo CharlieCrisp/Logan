@@ -46,9 +46,10 @@ let rec log_all_matching mempool_list blockchain_list = match mempool_list with
   | [] -> ()
 
 let log_list () =
+  IrminLogLeadMem.get_branch mempool_repo "charlie13.93.85.207" >>= fun branch ->
   IrminLogBlock.read_all blockchain_master_branch [] >>= fun blockchain_list ->
   Printf.printf "Blockchain size: %i\n" (List.length blockchain_list);
-  IrminLogLeadMem.read_all lead_mempool_master_branch [] >>= fun mempool_list ->
+  IrminLogLeadMem.read_all branch [] >>= fun mempool_list ->
   Printf.printf "Mempool size: %i\n" (List.length mempool_list);
   Lwt.return @@ log_all_matching mempool_list blockchain_list;;
 
