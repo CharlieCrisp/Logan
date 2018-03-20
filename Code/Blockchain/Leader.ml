@@ -142,7 +142,7 @@ module Make (Config: I_Config) : I_Leader = struct
     get_new_updates() >>= fun all_updates -> 
     mempool_cursor_earlier := !mempool_cursor_later;
     mempool_cursor_later := (run @@ (IrminLogMem.get_cursor mempool_master_branch ~path:path));
-    if all_updates = [] then Lwt_unix.sleep 1.0 >>= run_leader else
+    if all_updates = [] then run_leader() else
     let perform_update updates = (  
       add_list_to_blockchain updates >>= fun _ ->
       Lwt.return @@ Logger.info (Printf.sprintf "\027[95mFound %i New Updates\027[39m\n%!" (List.length updates))>>= fun _ ->
