@@ -6,8 +6,7 @@ Therefore, this can be used as such... bin/LeaderDemo user1@host1 user2@host2
 
 open Lwt.Infix
 
-let format_remote str = let value = Printf.sprintf "git+ssh://%s/tmp/ezirminl/part/mempool" str in
-  Printf.printf "Using remote: %s\n%!" value; value
+let format_remote str = Printf.printf "Using remote: %s\n%!" str; str
 
 let remotes = List.map format_remote (List.tl (Array.to_list Sys.argv))
 
