@@ -18,4 +18,9 @@ module Logger = struct
     let log = open_out_gen [Open_creat; Open_text; Open_append] 0o640 "output.log" in
     Printf.fprintf log "%s\n" str;
     close_out log
+    
+  let logg flt1 flt2 = 
+    let log = open_out_gen [Open_creat; Open_text; Open_append] 0o640 "merg" in
+    Printf.fprintf log "%f %f\n" flt1 flt2;
+    close_out log
 end

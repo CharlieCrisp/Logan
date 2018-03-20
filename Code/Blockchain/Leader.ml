@@ -119,7 +119,11 @@ module Make (Config: I_Config) : I_Leader = struct
         (*Logger.info (Printf.sprintf "Finishing Pull from remote %i at time %f" num (Ptime.to_float_s (Ptime_clock.now()))); *)
         update_mempools (num+1) xs;
       | [] -> Lwt.return ()
-    in update_mempools 0 remotes
+    in 
+      let time1 = (Ptime.to_float_s(Ptime_clock.now())) in
+      update_mempools 0 remotes >>= fun _ ->
+      Logger.logg time1 (Ptime.to_float_s (Ptime_clock.now()));
+      Lwt.return ()
    
   let interrupted_bool = ref false
   let interrupted_mvar = Lwt_mvar.create_empty()
