@@ -24,7 +24,7 @@ let parse_self str =
   self_uri := Some(str)
 
 let remote_tuple = ("-r", Arg.String parse_is_local, "Specify the remote repository in the form user@host");;
-let self_tuple = ("-u", Arg.String parse_is_local, "Specify your own uri in the form user@host");;
+let self_tuple = ("-u", Arg.String parse_self, "Specify your own uri in the form user@host");;
 let _ = Arg.parse [remote_tuple; self_tuple] (fun _ -> ()) ""
 
 let current_id = run @@ get_id()

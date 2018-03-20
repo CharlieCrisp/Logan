@@ -16,7 +16,7 @@ let parse_is_local str =
 let parse_id num = 
   machine_id := num
 let parse_self self = 
-  self_uri := self
+  self_uri := Some(self)
 let parse_time input = 
   let year = int_of_string (String.sub input 0 4) in
   let month = int_of_string (String.sub input 4 2) in
@@ -35,7 +35,7 @@ let parse_time input =
 let remote_tuple = ("-r", Arg.String parse_is_local, "Specify the remote repository in the form user@host")
 let id_tuple = ("-i", Arg.Int parse_id, "Specify the machine id as a number")
 let start_tuple = ("-s", Arg.String parse_time, "Specify when this should begin")
-let self_tuple = ("-u", Arg.String parse_is_local, "Specify your own uri in the form user@host")
+let self_tuple = ("-u", Arg.String parse_self, "Specify your own uri in the form user@host")
 
 let _ = Arg.parse [remote_tuple; id_tuple; start_tuple; self_tuple] (fun _ -> ()) ""
 
