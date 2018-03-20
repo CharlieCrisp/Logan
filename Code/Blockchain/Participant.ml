@@ -32,6 +32,7 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
   type t = Config.t 
   module IrminLogMem = Ezirmin.FS_log(Tc.String)
   module IrminLogBlock = Ezirmin.FS_log(Tc.String)
+  let has_synced = ref false
   let mempool_repo = Lwt_main.run @@ IrminLogMem.init ~root:"/tmp/ezirminl/part/mempool" ~bare:true ()
   let blockchain_repo = Lwt_main.run @@ IrminLogBlock.init ~root:"/tmp/ezirminl/lead/blockchain" ~bare:true ()
   let mempool_master_branch = match Config.self_uri with 
@@ -50,6 +51,13 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
       IrminLogBlock.get_branch blockchain_repo "internal" >>= fun ib ->
       IrminLogBlock.Sync.pull remote_block blockchain_master_branch `Update >>= fun _ ->
       IrminLogBlock.Sync.pull remote_block ib `Update
+    | _ -> Lwt.return `Error
+
+  let pull_mem () = match remote_mem_opt with 
+    | Some(remote_mem) ->
+      IrminLogBlock.get_branch mempool_repo "internal" >>= fun ib ->
+      IrminLogBlock.Sync.pull remote_mem mempool_master_branch `Update >>= fun _ ->
+      IrminLogBlock.Sync.pull remote_mem ib `Update
     | _ -> Lwt.return `Error
 
   let rec flat_map = function 
@@ -80,7 +88,11 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
       IrminLogMem.append ~message:"Entry added to the blockchain" wip_branch ~path:[] message >>= fun _ ->
       IrminLogMem.merge wip_branch ~into:mempool_master_branch in
     let message = Config.LogCoder.encode_string value in 
-    add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok
+    if (not(!has_synced)) then pull_mem () >>= fun _ ->
+      has_synced := true;
+      add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok 
+    else
+      add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok
     
   let add_transaction_to_mempool value =
     match Config.validator with 
