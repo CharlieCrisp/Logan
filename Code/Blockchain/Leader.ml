@@ -44,7 +44,7 @@ module Make (Config: I_Config) : I_Leader = struct
     | None -> raise Option_Unwrapping
 
   let pull_mem remote_mem branch = Lwt.join [ignore_lwt @@ IrminLogMem.Sync.pull remote_mem internal_branch `Merge;
-    ignore_lwt @@ IrminLogMem.Sync.pull remote_mem mempool_master_branch `Merge]
+    ignore_lwt @@ IrminLogMem.Sync.pull remote_mem branch `Merge]
 
   let add_value_to_blockchain value = 
     IrminLogBlock.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path value
