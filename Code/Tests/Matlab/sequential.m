@@ -1,5 +1,5 @@
 format long;
-data = importdata("../../../output.log", ' ');
+data = importdata("../../../../../PartIILogs/single_local_worker_no_delay.log", ' ');
 %filter NaN rows
 data(any(isnan(data), 2), :) = [];
 data = flipud(data);
@@ -13,13 +13,13 @@ for i = 1:size(data,1)-2
     %data is currently cumulative
     throughput = abs(1 / (t_s2 - t_s1));
     latency = t_e1 - t_s1;
-    if throughput < 20
-        throughputs(i) = throughputs(i) + throughput;
-        latencies(i) = latencies(i) + latency;
-    else
-        throughputs(i) = [];
-        latencies(i) = [];
+    if throughput < 20 && latency < 0.1
+        throughputs(i) = throughput;
+        latencies(i) = latency;
     end
 end
+
+latencies = latencies(throughputs ~= 0)
+throughputs = throughputs(throughputs ~= 0)
 
 scatter(throughputs,latencies);
