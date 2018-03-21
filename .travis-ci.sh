@@ -10,6 +10,7 @@ sudo apt-get install -qq ocaml ocaml-native-compilers camlp4-extra opam m4
 
 export OPAMYES=1
 opam init 
+opam switch 4.05.0
 opam install ${OPAM_DEPENDS}
 eval `opam config env`
 
