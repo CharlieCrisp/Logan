@@ -2,7 +2,7 @@
 PURPLE='\033[1;35m'
 NC='\033[0m'
 
-OPAM_DEPENDS="ocamlfind ounit re=1.7.1 cppo=1.6.2 jbuilder=1.0+beta17 lwt core core_extended ezirmin"
+OPAM_DEPENDS="ocamlfind ounit re=1.7.1 cppo=1.6.2 jbuilder=1.0+beta17 lwt core core_extended ezirmin=0.2.1 git-unix=1.7.1"
 	 
 echo "yes" | sudo add-apt-repository ppa:avsm/ppa
 sudo apt-get update -qq
