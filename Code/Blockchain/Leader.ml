@@ -43,8 +43,8 @@ module Make (Config: I_Config) : I_Leader = struct
     | Some x -> x
     | None -> raise Option_Unwrapping
 
-  let pull_mem remote_mem branch = Lwt.join [ignore_lwt @@ IrminLogMem.Sync.pull remote_mem internal_branch `Merge;
-    ignore_lwt @@ IrminLogMem.Sync.pull remote_mem branch `Merge]
+  let get_mempool_pull_promise remote_mem branch = (ignore_lwt @@ IrminLogMem.Sync.pull remote_mem internal_branch `Merge,
+    ignore_lwt @@ IrminLogMem.Sync.pull remote_mem branch `Merge)
 
   let add_value_to_blockchain value = 
     IrminLogBlock.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path value
@@ -135,26 +135,17 @@ module Make (Config: I_Config) : I_Leader = struct
           buffered_updates := newup;
           Lwt.return latest_known_part_mempool
 
-  let update_from_remote remote branch = 
-    try 
-      pull_mem remote branch >>= fun _ -> Lwt.return ()
-    with 
-     | _ -> Logger.info "Error while pulling from remote"; Lwt.return ()
-
-  (*This will sequentially merge changes from all the mempools in the known remotes*)
+  
   let update_mempool () = 
-    let rec update_mempools num = function 
-      | (remote, branch, name)::xs -> (*Logger.info (Printf.sprintf "Starting Pull from remote %i at time %f" num (Ptime.to_float_s (Ptime_clock.now())));*)
-        update_from_remote remote branch >>= fun _ ->
-        (*Logger.info (Printf.sprintf "Finishing Pull from remote %i at time %f" num (Ptime.to_float_s (Ptime_clock.now()))); *)
-        update_mempools (num+1) xs;
-      | [] -> Lwt.return ()
-    in 
-      let time1 = (Ptime.to_float_s(Ptime_clock.now())) in
-      update_mempools 0 remotes_branches_names >>= fun _ ->
-      Logger.logg time1 (Ptime.to_float_s (Ptime_clock.now()));
-      Lwt.return ()
-
+    let rec get_promises = function 
+      | (remote, branch, _)::xs -> let promise_main, promise_internal = get_mempool_pull_promise remote branch in
+        (promise_main::(promise_internal::(get_promises xs)))
+      | [] -> [] in 
+    let promises = get_promises remotes_branches_names in
+    try 
+      Lwt.join promises
+    with 
+      | _ -> Logger.info "Error while pulling from remote"; Lwt.return ()
    
   let interrupted_bool = ref false
   let interrupted_mvar = Lwt_mvar.create_empty()
@@ -244,4 +235,3 @@ module Make (Config: I_Config) : I_Leader = struct
     add_part_genesis_and_cursor >>= fun _ ->
     Lwt.return run_leader
 end;;
-  
