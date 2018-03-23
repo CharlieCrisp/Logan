@@ -1,39 +1,33 @@
 ![Travis Build](https://travis-ci.com/CharlieCrisp/PartIIProject.svg?token=jFEDSGqrpzsJd3nc1tVx&branch=master)
 
-# PartIIProject 
+# Logan 
 Cambridge CST Part II Project - Building a Blockchain Library for OCaml
 
 This project creates a blockchain using Irmin and a leader-based consensus protocol. 
 
-## Building the project
+## Building Logan
 To build the project, navigate to the root of the repository and type...
 ```bash
 make
 ```
-...and to rebuild the project, type...
+There are a few helper executables in the `/Code/Tests` directory which can be build with
 ```bash
-make flush
+make test
+``` 
+To remove any blockchain or mempool without removing generated executables:
+```bash
+make clear
+```
+To remove everything, including executables, logs and blockchains:
+```bash
+make clean
 ```
 
-## Running the example
-In the `Code/Examples` directory, is a sample program which will run a blockchain leader. The executable takes a list of remote addresses on the the command line, of the form `user@host`. The leader will then pull and merge any updates made on these 'workers'. A typical command would be...
+## Setting up Logan
+The script `logan` in the `/Utils` directory can be used to access the executables that come with Logan. 
+Use `make` and `make test` to build these and then it is recommended that you add the following directories to your path:
 ```bash
-bin/lead.exe user1@host1 user2@host2
+export PATH=$PATH:path-to-repository/bin:path-to-repository/Utils
 ```
-
-There is also a corresponding demo to run the workers. The program accepts the location of the leader on the command line. For example...
-```bash
-bin/part.exe -r leaderuser@leaderhost
-```
-
-## Setup scripts
-There are a couple of scripts to help with setting up machines.
-To set up a remote machine, type...
-```bash
-bash Utils/remote_setup.sh
-```
-
-To sync a participants mempool with the leader's, before running a participant, type...
-```bash
-bash Utils/sync_git.sh leaderuser@leaderhost
-```
+Now you should be able to run `logan --help` to see what subcommands you can run. 
+If you are ever unsure of how to use a subcommand, then `logan subcommand --help` should help you out!
