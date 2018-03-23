@@ -1,4 +1,4 @@
-# Edit this for your own project dependencies
+#!/bin/bash
 PURPLE='\033[1;35m'
 NC='\033[0m'
 
@@ -23,4 +23,4 @@ if [ ! -a ~/.inputrc ]; then echo '$include /etc/inputrc' > ~/.inputrc; fi
 
 # Add option to ~/.inputrc to enable case-insensitive tab completion
 echo 'set completion-ignore-case On' >> ~/.inputrc
-export PATH=$PATH:~/PartIIProject/bin
+export PATH=$PATH:~/PartIIProject/bin:~/PartIIProject/Utils

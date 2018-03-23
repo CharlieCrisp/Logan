@@ -1,3 +1,4 @@
+#!/bin/bash
 USER=$1
 HOST=$2 
 if [ -z "$USER" ] || [ -z "$HOST" ] ;

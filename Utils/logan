@@ -1,0 +1,28 @@
+#!/bin/bash
+SUBCOMMAND=$1
+ARGUMENTS=${@:2}
+ARGUMENTS_MISS2=${@:3}
+case $SUBCOMMAND in 
+  size)
+    GetSize $ARGUMENTS
+    ;;
+  lead)
+    if [ "$1" -eq "-d" ]; then
+      lead $ARGUMENTS_MISS2
+    else 
+      TestLeader $ARGUMENTS
+    fi
+    ;;
+  part)
+    part $ARGUMENTS
+    ;;
+  print)
+    PrintBlockchains $ARGUMENTS
+    ;;
+  gather)
+    GatherLeaderResults $ARGUMENTS
+    ;;
+  test)
+    ThroughputLatencyTester $ARGUMENTS
+    ;;
+esac
