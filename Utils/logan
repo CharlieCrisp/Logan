@@ -25,4 +25,14 @@ case $SUBCOMMAND in
   test)
     ThroughputLatencyTester $ARGUMENTS
     ;;
+  help)
+    printf "\nLOGAN - A Blockchain Library built in OCaml\n\n\
+SUBCOMMANDS\n\n\
+lead          Run a Leader node\n\
+part          Run a Participant node\n\
+size          Print the size of the blockchain and/or mempools\n\
+print         Print the contents of the blockchain and/or mempools\n\
+test          Run a Logan test program\n\
+gather        Gather test program results for analysis\n\n"
+    ;;
 esac
