@@ -7,13 +7,38 @@ case $SUBCOMMAND in
     GetSize $ARGUMENTS
     ;;
   lead)
-    if [ "$1" -eq "-d" ]; then
+    demo=false
+    OPTIND=2
+    while getopts "d" opt; do 
+      case $opt in 
+        d) 
+          demo=true
+          ;;
+      esac
+    done
+    if $demo; then
       lead $ARGUMENTS_MISS2
     else 
       TestLeader $ARGUMENTS
     fi
     ;;
   part)
+    OPTIND=2
+    while getopts "r:u:" opt; do 
+      case $opt in 
+        r) 
+          printf "\e[1;34m[LOGAN]\e[0;39m Syncing Git\n"
+          sync_git $OPTARG
+          printf "\e[1;34m[LOGAN]\e[0;39m Finished Syncing Git\nPress enter to continue"
+          while true; do 
+            read -s -n 1 key
+            if [[ $key = "" ]]; then 
+              break
+            fi
+          done
+          ;;
+      esac
+    done
     part $ARGUMENTS
     ;;
   print)
@@ -23,12 +48,47 @@ case $SUBCOMMAND in
     GatherLeaderResults $ARGUMENTS
     ;;
   test)
+  OPTIND=2
+    while getopts "r:i:s:u:" opt; do 
+      case $opt in 
+        r) 
+          printf "\e[1;34m[LOGAN]\e[0;39m Syncing Git\n"
+          sync_git $OPTARG
+          printf "\e[1;34m[LOGAN]\e[0;39m Finished Syncing Git\nPress enter to continue"
+          while true; do 
+            read -s -n 1 key
+            if [[ $key = "" ]]; then 
+              break
+            fi
+          done
+          ;;
+      esac
+    done
     ThroughputLatencyTester $ARGUMENTS
+    ;;
+  add)
+    OPTIND=2
+      while getopts "d:n:i:s:u:r:" opt; do 
+        case $opt in 
+          r) 
+            printf "\e[1;34m[LOGAN]\e[0;39m Syncing Git\n"
+            sync_git $OPTARG
+            printf "\e[1;34m[LOGAN]\e[0;39m Finished Syncing Git\nPress enter to continue"
+            while true; do 
+              read -s -n 1 key
+              if [[ $key = "" ]]; then 
+                break
+              fi
+            done
+            ;;
+        esac
+      done
+    AddNumberToBlockchain $ARGUMENTS
     ;;
   help)
     printf "\nLOGAN - A Blockchain Library built in OCaml\n\n\
 SUBCOMMANDS\n\n\
-lead          Run a Leader node\n\
+lead          Run a Leader node (-d for demo mode)\n\
 part          Run a Participant node\n\
 size          Print the size of the blockchain and/or mempools\n\
 print         Print the contents of the blockchain and/or mempools\n\
