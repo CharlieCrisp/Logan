@@ -85,7 +85,7 @@ case $SUBCOMMAND in
       done
     AddNumberToBlockchain $ARGUMENTS
     ;;
-  help)
+  help|-help|--help)
     printf "\nLOGAN - A Blockchain Library built in OCaml\n\n\
 SUBCOMMANDS\n\n\
 lead          Run a Leader node (-d for demo mode)\n\
