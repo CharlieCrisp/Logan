@@ -1,4 +1,7 @@
 #!/bin/bash
+if [ -f ./config ]; then
+  source ./config
+fi
 SUBCOMMAND=$1
 ARGUMENTS=${@:2}
 ARGUMENTS_MISS2=${@:3}
@@ -17,9 +20,9 @@ case $SUBCOMMAND in
       esac
     done
     if $demo; then
-      lead $ARGUMENTS_MISS2
+      lead $ARGUMENTS_MISS2 ${participants[*]}
     else 
-      TestLeader $ARGUMENTS
+      TestLeader $ARGUMENTS ${participants[*]}
     fi
     ;;
   part)
@@ -39,7 +42,7 @@ case $SUBCOMMAND in
           ;;
       esac
     done
-    part $ARGUMENTS
+    part $ARGUMENTS $leader $user
     ;;
   print)
     PrintBlockchains $ARGUMENTS
@@ -64,7 +67,7 @@ case $SUBCOMMAND in
           ;;
       esac
     done
-    ThroughputLatencyTester $ARGUMENTS
+    ThroughputLatencyTester $ARGUMENTS $leader $user $id
     ;;
   add)
     OPTIND=2
@@ -83,7 +86,7 @@ case $SUBCOMMAND in
             ;;
         esac
       done
-    AddNumberToBlockchain $ARGUMENTS
+    AddNumberToBlockchain $ARGUMENTS  $leader $user $id
     ;;
   help|-help|--help)
     printf "\nLOGAN - A Blockchain Library built in OCaml\n\n\
