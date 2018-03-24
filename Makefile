@@ -8,16 +8,14 @@ all:
 test:
 	@jbuilder build Code/Tests/TestLeader.exe
 	@jbuilder build Code/Tests/ThroughputLatencyTester.exe
-	@jbuilder build Code/Tests/GatherLeaderResults.exe
-	@jbuilder build Code/Tests/GatherNoRemResults.exe
+	@jbuilder build Code/Tests/GatherResults.exe
 	@jbuilder build Code/Tests/AddNumberToBlockchain.exe
 	@jbuilder build Code/Tests/PrintBlockchains.exe
 	@jbuilder build Code/Tests/GetSize.exe
 	@mkdir -p bin
 	@mv _build/default/Code/Tests/ThroughputLatencyTester.exe bin/ThroughputLatencyTester
 	@mv _build/default/Code/Tests/TestLeader.exe bin/TestLeader
-	@mv _build/default/Code/Tests/GatherLeaderResults.exe bin/GatherLeaderResults
-	@mv _build/default/Code/Tests/GatherNoRemResults.exe bin/GatherNoRemResults
+	@mv _build/default/Code/Tests/GatherResults.exe bin/GatherResults
 	@mv _build/default/Code/Tests/AddNumberToBlockchain.exe bin/AddNumberToBlockchain
 	@mv _build/default/Code/Tests/PrintBlockchains.exe bin/PrintBlockchains
 	@mv _build/default/Code/Tests/GetSize.exe bin/GetSize

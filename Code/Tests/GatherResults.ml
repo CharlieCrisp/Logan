@@ -5,6 +5,7 @@ module IrminLogBlock = Ezirmin.FS_log(Tc.String)
 module IrminLogMem = Ezirmin.FS_log(Tc.String)
 module IrminLogLeadMem = Ezirmin.FS_log(Tc.String)
 module Coder = LogStringCoder.TestLogStringCoder
+let remotes = ref []
 let run = Lwt_main.run
 let path = []
 let blockchain_repo = run @@ IrminLogBlock.init ~root: "/tmp/ezirminl/lead/blockchain" ~bare:true ()
@@ -45,12 +46,37 @@ let rec log_all_matching mempool_list blockchain_list = match mempool_list with
         log_all_matching xs blockchain_list )
   | [] -> ()
 
-let log_list () =
-  IrminLogLeadMem.get_branch mempool_repo "charlie13.93.85.207" >>= fun branch ->
+let rec get_branches branches = 
+  let get_branch branch = run @@ IrminLogLeadMem.get_branch mempool_repo branch in 
+  List.fold_left (fun acc branch -> (get_branch branch)::acc) [] branches
+
+let compare str1 str2 = 
+  if str1 == "Genesis Commit" then 
+    1
+  else if str2 == "Genesis Commit" then
+    -1
+  else 
+  let item1 = Coder.decode_log_item str1 in 
+  let item2 = Coder.decode_log_item str2 in
+  int_of_float ((Coder.get_time item1) -. (Coder.get_time item2))
+
+let log_list_remotes () =
+  let branches = get_branches !remotes in
+  IrminLogBlock.read_all blockchain_master_branch [] >>= fun blockchain_list ->
+  let items = List.fold_left (fun acc bra -> let items = run @@ IrminLogLeadMem.read_all bra [] in items @ acc) [] branches in
+  let sorted_items = List.sort compare items in
+  Lwt.return @@ log_all_matching sorted_items blockchain_list;;
+
+let log_list_local () =
   IrminLogBlock.read_all blockchain_master_branch [] >>= fun blockchain_list ->
   Printf.printf "Blockchain size: %i\n" (List.length blockchain_list);
-  IrminLogLeadMem.read_all branch [] >>= fun mempool_list ->
+  IrminLogMem.read_all mempool_master_branch [] >>= fun mempool_list ->
   Printf.printf "Mempool size: %i\n" (List.length mempool_list);
   Lwt.return @@ log_all_matching mempool_list blockchain_list;;
 
-Lwt_main.run @@ log_list();;
+let arg_local = ("-l", Arg.Unit (fun () -> run @@ log_list_local()), "Gather results from a local Participant")
+let arg_remote = ("-r", Arg.Rest (fun str -> remotes := str::!remotes), "Gather results from remote Participants")
+let _ = Arg.parse [arg_local;arg_remote] (fun _ -> ()) ""
+
+let _ = if (!remotes != []) then
+  run @@ log_list_remotes()

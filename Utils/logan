@@ -48,7 +48,7 @@ case $SUBCOMMAND in
     PrintBlockchains $ARGUMENTS
     ;;
   gather)
-    GatherLeaderResults $ARGUMENTS
+    GatherResults $ARGUMENTS
     ;;
   test)
   OPTIND=2
