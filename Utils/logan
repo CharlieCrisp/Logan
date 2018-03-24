@@ -90,19 +90,19 @@ case $SUBCOMMAND in
     ;;
   help|-help|--help)
     printf "\nLOGAN - A Blockchain Library built in OCaml\n\n\
-SUBCOMMANDS\n\n\
-lead          Run a Leader node (-d for demo mode)\n\
-part          Run a Participant node\n\
-size          Print the size of the blockchain and/or mempools\n\
-print         Print the contents of the blockchain and/or mempools\n\
-test          Run a Logan test program\n\
-gather        Gather test program results for analysis\n\n\
-CONFIG\n\n\
+COMMANDS\n\
+    lead          Run a Leader node (-d for demo mode)\n\
+    part          Run a Participant node\n\
+    size          Print the size of the blockchain and/or mempools\n\
+    print         Print the contents of the blockchain and/or mempools\n\
+    test          Run a Logan test program\n\
+    gather        Gather test program results for analysis\n\n\
+CONFIG\n\
 Specify default values of common flags by adding a file named 'config' to your working directory.\n\
-It may contain any of the following...\n\n\
-user=user@host\n\
-leader=leaderuser@leaderhost\n\
-id=5\n\
-participants=(user1@host1 user@host2)\n\n"
+It may contain any of the following...\n\
+    user=user@host\n\
+    leader=leaderuser@leaderhost\n\
+    id=5\n\
+    participants=(user1@host1 user@host2)\n"
     ;;
 esac
