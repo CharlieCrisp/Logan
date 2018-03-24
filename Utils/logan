@@ -45,7 +45,7 @@ case $SUBCOMMAND in
     part $ARGUMENTS $leader $user
     ;;
   print)
-    PrintBlockchains $ARGUMENTS
+    PrintBlockchains $ARGUMENTS -m ${participants[*]}
     ;;
   gather)
     GatherResults $ARGUMENTS
