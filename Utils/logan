@@ -16,13 +16,21 @@ case $SUBCOMMAND in
   lead)
     demo=false
     OPTIND=2
-    while getopts "d" opt; do 
+    while getopts ":dh[h:help?Show help messages.]" opt; do 
       case $opt in 
         d) 
           demo=true
           ;;
+        h) 
+          printf "This command will run a leader node.\nUse -d to run a demo\n"
+          exit 1
+          ;;
       esac
     done
+    if [[ $3 -eq "help" ]]; then 
+      printf "This command will run a leader node.\nUse -d to run a demo\n"
+      exit 1
+    fi
     if $demo; then
       lead $ARGUMENTS_MISS2 ${participants[*]}
     else 
