@@ -25,7 +25,7 @@ let path = []
 let print_txn str = let txn = Coder.decode_string str in 
   match txn with 
     | Some((machine, txn, rate)) -> Printf.printf "Machine id: %s; Txn id: %s; Rate: %f\n%!" machine txn rate
-    | None -> Printf.printf "Could Not Decode!\n%!"
+    | None -> Printf.printf "Could Not Decode: %s\n%!" str
 
 let rec print_list lst = match lst with 
   | (x::[]) -> print_txn x
@@ -39,7 +39,8 @@ let rec get_first num lst = match num, lst with
 
 let rec print_mempool_list repo = function 
   | [] -> ()
-  | x::xs -> let branch = Lwt_main.run @@ IrminLogLeadMem.get_branch repo x in
+  | x::xs -> Printf.printf "%s" x;
+    let branch = Lwt_main.run @@ IrminLogLeadMem.get_branch repo x in
     let mempool_list = run @@ IrminLogLeadMem.read_all branch [] in
     if mempool_list == [] then begin
       Printf.printf "No items found\n%!";
