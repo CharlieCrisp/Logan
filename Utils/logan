@@ -27,6 +27,7 @@ case $SUBCOMMAND in
     ;;
   part)
     OPTIND=2
+    synced=false
     while getopts "r:u:" opt; do 
       case $opt in 
         r) 
@@ -42,6 +43,17 @@ case $SUBCOMMAND in
           ;;
       esac
     done
+    if [[( ! (-z "$leader") ) && ( ! $synced  )]]; then 
+      printf "\e[1;34m[LOGAN]\e[0;39m Syncing Git\n"
+      sync_git $leader
+      printf "\e[1;34m[LOGAN]\e[0;39m Finished Syncing Git\nPress enter to continue"
+      while true; do 
+        read -s -n 1 key
+        if [[ $key = "" ]]; then 
+          break
+        fi
+      done
+    fi
     part $ARGUMENTS $leader $user
     ;;
   print)
@@ -67,25 +79,47 @@ case $SUBCOMMAND in
           ;;
       esac
     done
+    if [[( ! (-z "$leader") ) && ( ! $synced  )]]; then 
+      printf "\e[1;34m[LOGAN]\e[0;39m Syncing Git\n"
+      sync_git $leader
+      printf "\e[1;34m[LOGAN]\e[0;39m Finished Syncing Git\nPress enter to continue"
+      while true; do 
+        read -s -n 1 key
+        if [[ $key = "" ]]; then 
+          break
+        fi
+      done
+    fi
     ThroughputLatencyTester $ARGUMENTS $leader $user $id
     ;;
   add)
     OPTIND=2
-      while getopts "d:n:i:s:u:r:" opt; do 
-        case $opt in 
-          r) 
-            printf "\e[1;34m[LOGAN]\e[0;39m Syncing Git\n"
-            sync_git $OPTARG
-            printf "\e[1;34m[LOGAN]\e[0;39m Finished Syncing Git\nPress enter to continue"
-            while true; do 
-              read -s -n 1 key
-              if [[ $key = "" ]]; then 
-                break
-              fi
-            done
-            ;;
-        esac
+    while getopts "d:n:i:s:u:r:" opt; do 
+      case $opt in 
+        r) 
+          printf "\e[1;34m[LOGAN]\e[0;39m Syncing Git\n"
+          sync_git $OPTARG
+          printf "\e[1;34m[LOGAN]\e[0;39m Finished Syncing Git\nPress enter to continue"
+          while true; do 
+            read -s -n 1 key
+            if [[ $key = "" ]]; then 
+              break
+            fi
+          done
+          ;;
+      esac
+    done
+    if [[( ! (-z "$leader") ) && ( ! $synced  )]]; then 
+      printf "\e[1;34m[LOGAN]\e[0;39m Syncing Git\n"
+      sync_git $leader
+      printf "\e[1;34m[LOGAN]\e[0;39m Finished Syncing Git\nPress enter to continue"
+      while true; do 
+        read -s -n 1 key
+        if [[ $key = "" ]]; then 
+          break
+        fi
       done
+    fi
     AddNumberToBlockchain $ARGUMENTS  $leader $user $id
     ;;
   help|-help|--help)
