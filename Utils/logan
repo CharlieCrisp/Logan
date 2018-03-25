@@ -1,4 +1,8 @@
 #!/bin/bash
+leader=""
+user=""
+id=""
+participants=""
 if [ -f ./config ]; then
   source ./config
 fi
@@ -33,6 +37,7 @@ case $SUBCOMMAND in
         r) 
           printf "\e[1;34m[LOGAN]\e[0;39m Syncing Git\n"
           sync_git $OPTARG
+          synced=true
           printf "\e[1;34m[LOGAN]\e[0;39m Finished Syncing Git\nPress enter to continue"
           while true; do 
             read -s -n 1 key
@@ -54,26 +59,35 @@ case $SUBCOMMAND in
         fi
       done
     fi
-    part $ARGUMENTS -r $leader -u $user
+    if [[ ! (-z "$leader")]]; then
+      ARGUMENTS="$ARGUMENTS -r $leader"
+    fi
+    if [[ ! (-z "$user")]]; then
+      ARGUMENTS="$ARGUMENTS -u $user"
+    fi
+    part $ARGUMENTS
     ;;
   print)
-
-    if [[( ! (-z "$leader") )]]; then 
-      PrintBlockchains $ARGUMENTS -r -m ${participants[*]}
-    else 
-      PrintBlockchains $ARGUMENTS -m ${participants[*]}
+    if [[( ! (-z "$user") )]]; then
+      ARGUMENTS="$ARGUMENTS -u $user"
     fi
+    if [[( ! (-z "$participants") )]]; then
+      ARGUMENTS="$ARGUMENTS -m ${participants[*]}"
+    fi
+    PrintBlockchains $ARGUMENTS
     ;;
   gather)
     GatherResults $ARGUMENTS
     ;;
   test)
   OPTIND=2
+  synced=false
     while getopts "r:i:s:u:" opt; do 
       case $opt in 
         r) 
           printf "\e[1;34m[LOGAN]\e[0;39m Syncing Git\n"
           sync_git $OPTARG
+          synced=true
           printf "\e[1;34m[LOGAN]\e[0;39m Finished Syncing Git\nPress enter to continue"
           while true; do 
             read -s -n 1 key
@@ -95,16 +109,26 @@ case $SUBCOMMAND in
         fi
       done
     fi
-
-    ThroughputLatencyTester $ARGUMENTS -r $leader -u $user -i $id
+    if [[ ! (-z "$leader")]]; then
+      ARGUMENTS="$ARGUMENTS -r $leader"
+    fi
+    if [[ ! (-z "$user")]]; then
+      ARGUMENTS="$ARGUMENTS -u $user"
+    fi
+    if [[ ! (-z "$id")]]; then
+      ARGUMENTS="$ARGUMENTS -i $id"
+    fi
+    ThroughputLatencyTester $ARGUMENTS
     ;;
   add)
     OPTIND=2
+    synced=false
     while getopts "d:n:i:s:u:r:" opt; do 
       case $opt in 
         r) 
           printf "\e[1;34m[LOGAN]\e[0;39m Syncing Git\n"
           sync_git $OPTARG
+          synced=true
           printf "\e[1;34m[LOGAN]\e[0;39m Finished Syncing Git\nPress enter to continue"
           while true; do 
             read -s -n 1 key
@@ -126,7 +150,16 @@ case $SUBCOMMAND in
         fi
       done
     fi
-    AddNumberToBlockchain $ARGUMENTS -r $leader -u $user -i $id
+    if [[ ! (-z "$leader")]]; then
+      ARGUMENTS="$ARGUMENTS -r $leader"
+    fi
+    if [[ ! (-z "$user")]]; then
+      ARGUMENTS="$ARGUMENTS -u $user"
+    fi
+    if [[ ! (-z "$id")]]; then
+      ARGUMENTS="$ARGUMENTS -i $id"
+    fi
+    AddNumberToBlockchain $ARGUMENTS
     ;;
   help|-help|--help)
     printf "\nLOGAN - A Blockchain Library built in OCaml\n\n\
