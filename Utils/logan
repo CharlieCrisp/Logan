@@ -57,7 +57,12 @@ case $SUBCOMMAND in
     part $ARGUMENTS -r $leader -u $user
     ;;
   print)
-    PrintBlockchains $ARGUMENTS -m ${participants[*]}
+
+    if [[( ! (-z "$leader") )]]; then 
+      PrintBlockchains $ARGUMENTS -r -m ${participants[*]}
+    else 
+      PrintBlockchains $ARGUMENTS -m ${participants[*]}
+    fi
     ;;
   gather)
     GatherResults $ARGUMENTS
@@ -90,6 +95,7 @@ case $SUBCOMMAND in
         fi
       done
     fi
+
     ThroughputLatencyTester $ARGUMENTS -r $leader -u $user -i $id
     ;;
   add)

@@ -10,14 +10,16 @@ let participant = ref false
 let mempools = ref []
 let f = ref None
 let l = ref None
+let is_leader = ref false
 
 let print_blockchain = ("-b", Arg.Unit (fun () -> blockchain := true), "Print the blockchain")
 let print_participant = ("-p", Arg.Unit (fun () -> participant := true), "Print the local participant mempool")
+let is_leader_tup = ("-r", Arg.Unit (fun b -> is_leader := true), "Specify that you are on the leader machine")
 let print_first = ("-f", Arg.Int (fun num -> f := Some(num)), "Print only first n txns")
 let print_last = ("-l", Arg.Int (fun num -> l := Some(num)), "Print only last n txns")
 let print_mempools = ("-m", Arg.Rest (fun mempool -> mempools := ((Str.global_replace (Str.regexp "@") "" mempool)::(!mempools))), 
   "Specify the remote mempools to print - in the format user@host")
-let _ = Arg.parse [print_blockchain;print_participant;print_first;print_last;print_mempools] (fun _ -> ()) ""
+let _ = Arg.parse [print_blockchain;print_participant;print_first;print_last;print_mempools;is_leader_tup] (fun _ -> ()) ""
 
 let run = Lwt_main.run
 let path = []
@@ -86,8 +88,12 @@ let print () =
     print_local_mempool ()
   end;
   if !mempools != [] then begin
-    let mempool_repo = run @@ IrminLogLeadMem.init ~root:"/tmp/ezirminl/lead/mempool" ~bare:true () in
-    print_mempool_list mempool_repo !mempools
+    if !is_leader then 
+      let mempool_repo = run @@ IrminLogLeadMem.init ~root:"/tmp/ezirminl/lead/mempool" ~bare:true () in
+      print_mempool_list mempool_repo !mempools
+    else 
+      let mempool_repo = run @@ IrminLogLeadMem.init ~root:"/tmp/ezirminl/part/mempool" ~bare:true () in
+      print_mempool_list mempool_repo !mempools
   end;;
 
 print();;
