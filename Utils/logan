@@ -40,7 +40,7 @@ case $SUBCOMMAND in
   part)
     OPTIND=2
     synced=false
-    while getopts "r:u:" opt; do 
+    while getopts ":h[h:help?Show help messages.]r:u:" opt; do 
       case $opt in 
         r) 
           printf "\e[1;34m[LOGAN]\e[0;39m Syncing Git\n"
@@ -54,8 +54,16 @@ case $SUBCOMMAND in
             fi
           done
           ;;
+        h) 
+          printf "This command will run a participant demo.\n"
+          exit 1
+          ;;
       esac
     done
+    if [[ $3 -eq "help" ]]; then 
+      printf "This command will run a participant demo.\n"
+      exit 1
+    fi
     if [[( ! (-z "$leader") ) && ( ! $synced  )]]; then 
       printf "\e[1;34m[LOGAN]\e[0;39m Syncing Git\n"
       sync_git $leader
@@ -90,7 +98,7 @@ case $SUBCOMMAND in
   test)
   OPTIND=2
   synced=false
-    while getopts "r:i:s:u:" opt; do 
+    while getopts ":r:i:s:u:" opt; do 
       case $opt in 
         r) 
           printf "\e[1;34m[LOGAN]\e[0;39m Syncing Git\n"
@@ -131,7 +139,7 @@ case $SUBCOMMAND in
   add)
     OPTIND=2
     synced=false
-    while getopts "d:n:i:s:u:r:" opt; do 
+    while getopts ":d:n:i:s:u:r:" opt; do 
       case $opt in 
         r) 
           printf "\e[1;34m[LOGAN]\e[0;39m Syncing Git\n"
