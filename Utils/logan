@@ -54,7 +54,7 @@ case $SUBCOMMAND in
         fi
       done
     fi
-    part $ARGUMENTS $leader $user
+    part $ARGUMENTS -r $leader -u $user
     ;;
   print)
     PrintBlockchains $ARGUMENTS -m ${participants[*]}
@@ -90,7 +90,7 @@ case $SUBCOMMAND in
         fi
       done
     fi
-    ThroughputLatencyTester $ARGUMENTS $leader $user $id
+    ThroughputLatencyTester $ARGUMENTS -r $leader -u $user -i $id
     ;;
   add)
     OPTIND=2
@@ -120,7 +120,7 @@ case $SUBCOMMAND in
         fi
       done
     fi
-    AddNumberToBlockchain $ARGUMENTS  $leader $user $id
+    AddNumberToBlockchain $ARGUMENTS -r $leader -u $user -i $id
     ;;
   help|-help|--help)
     printf "\nLOGAN - A Blockchain Library built in OCaml\n\n\
