@@ -2,11 +2,17 @@ open Lwt.Infix
 
 module Logger = Logger.Logger
 
+module type I_Validator = sig 
+  type t 
+  val init: t list -> unit Lwt.t (*Accept any transactions already in the blockchain, initialise state then return when ready*)
+  val filter: t list -> t list Lwt.t
+end
+
 module type I_Config = sig 
   type t 
   module LogCoder: Participant.I_LogStringCoder with type t = t
+  module Validator: I_Validator with type t = t
   val remotes: string list
-  val validator: (t list -> t list -> t list) option
 end
 
 module type I_Leader = sig
@@ -184,15 +190,11 @@ module Make (Config: I_Config) : I_Leader = struct
       Lwt.return @@ Logger.info (Printf.sprintf "\027[95mFound %i New Updates\027[39m\n%!" (List.length updates))>>= fun _ ->
       run_leader ()
       ) in
-    match Config.validator with 
-      | Some(f) -> 
-        let decoded_updates = flat_map (List.map Config.LogCoder.decode_string all_updates) in
-        get_all_transactions_from_blockchain() >>= fun blockchain ->
-        let new_updates = f blockchain decoded_updates in
-        let new_string_updates = List.map (Config.LogCoder.encode_string) new_updates in 
-        perform_update new_string_updates
-      | None -> perform_update all_updates
-  
+    let decoded_updates = flat_map (List.map Config.LogCoder.decode_string all_updates) in
+    Config.Validator.filter decoded_updates >>= fun new_updates ->
+    let new_string_updates = List.map (Config.LogCoder.encode_string) new_updates in 
+    perform_update new_string_updates
+
   let fail_nicely str = interrupted_bool := true;
     run (Lwt_mvar.take interrupted_mvar >>= fun _ -> 
       IrminLogBlock.read_all blockchain_master_branch ~path:path >>= fun blockchain ->
@@ -233,5 +235,7 @@ module Make (Config: I_Config) : I_Leader = struct
     register_handlers();  
     add_genesis_and_update_cursors() >>=
     add_part_genesis_and_cursor >>= fun _ ->
+    get_all_transactions_from_blockchain () >>= fun txns ->
+    Config.Validator.init txns >>= fun _ ->
     Lwt.return run_leader
 end;;

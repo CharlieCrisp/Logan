@@ -16,8 +16,12 @@ let remotes = List.map format_remote (List.tl (Array.to_list Sys.argv))
 module Config : Blockchain.I_LeaderConfig with type t = string * string * string = struct 
   type t = string * string * string
   module LogCoder = LogStringCoder.BookLogStringCoder
+  module Validator = struct 
+    type t = string * string * string
+    let init _ = Lwt.return ()
+    let filter list = Lwt.return list
+  end 
   let remotes = remotes
-  let validator = None
 end
 
 module Leader = Blockchain.MakeLeader(Config);;
