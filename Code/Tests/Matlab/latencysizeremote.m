@@ -26,14 +26,17 @@ y  = reshape(result(1:M), n, []);
 result = transpose(sum(y, 1) / n);
 
 %plot
+clear plot
 transactions = n*(1:length(result));
 plot(transactions, result);
 xlabel("Blockchain Size, transactions");
 ylabel("Latency, s");
 ylim([0 15.0]);
 hold on
-plot(git_sizes, irmin_git_bad_latency);
-legend('Logan transaction latency','Irmin Pull Latency')
+plot(git_sizes, irmin_git_bad_latency)
+plot(git_sizes, git_bad_latency);
+legend('Logan transaction latency','Irmin Pull Latency', 'Git Pull Latency')
+hold off
 %least mean squares plot
 % X = [ones(length(result),1) (transactions')];
 % size(X)
@@ -43,7 +46,3 @@ legend('Logan transaction latency','Irmin Pull Latency')
 % hold on
 % plot(transactions, ycalc);
 hold off
-figure
-irmin_add_bad = [5.161 5.585 10.438 15.439 18.00];
-irmin_sizes = [ 0 1000 2000 3000 4000];
-plot(irmin_sizes, irmin_add_bad);
