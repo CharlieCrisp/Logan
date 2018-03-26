@@ -75,7 +75,7 @@ let log_list_local () =
   Lwt.return @@ log_all_matching mempool_list blockchain_list;;
 
 let arg_local = ("-l", Arg.Unit (fun () -> run @@ log_list_local()), "Gather results from a local Participant")
-let arg_remote = ("-r", Arg.Rest (fun str -> remotes := str::!remotes), "Gather results from remote Participants")
+let arg_remote = ("-r", Arg.Rest (fun str -> remotes := (Str.global_replace (Str.regexp "@") "" str)::!remotes), "Gather results from remote Participants")
 let _ = Arg.parse [arg_local;arg_remote] (fun _ -> ()) ""
 
 let _ = if (!remotes != []) then
