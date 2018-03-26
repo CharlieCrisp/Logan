@@ -1,7 +1,7 @@
 (jbuild_version 1)
 
 (executables
- ((names (ThroughputLatencyTester OCamlGitPull TestLeader GetSize GatherResults AddNumberToBlockchain PrintBlockchains))
-  (modules (ThroughputLatencyTester OCamlGitPull TestLeader GetSize GatherResults AddNumberToBlockchain PrintBlockchains))
+ ((names (ThroughputLatencyTester TestAddLatency OCamlGitPull TestLeader GetSize GatherResults AddNumberToBlockchain PrintBlockchains))
+  (modules (ThroughputLatencyTester TestAddLatency OCamlGitPull TestLeader GetSize GatherResults AddNumberToBlockchain PrintBlockchains))
   (modes (native))
   (libraries (lwt.unix ezirmin tc lwt ezjsonm core_extended ptime logstringcoder git))))

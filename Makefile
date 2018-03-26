@@ -13,6 +13,7 @@ test:
 	@jbuilder build Code/Tests/PrintBlockchains.exe
 	@jbuilder build Code/Tests/GetSize.exe
 	@jbuilder build Code/Tests/OCamlGitPull.exe
+	@jbuilder build Code/Tests/TestAddLatency.exe
 	@mkdir -p bin
 	@mv _build/default/Code/Tests/ThroughputLatencyTester.exe bin/ThroughputLatencyTester
 	@mv _build/default/Code/Tests/TestLeader.exe bin/TestLeader
@@ -21,6 +22,7 @@ test:
 	@mv _build/default/Code/Tests/PrintBlockchains.exe bin/PrintBlockchains
 	@mv _build/default/Code/Tests/GetSize.exe bin/GetSize
 	@mv _build/default/Code/Tests/OCamlGitPull.exe bin/OCamlGitPull
+	@mv _build/default/Code/Tests/TestAddLatency.exe bin/TestAddLatency
 
 clean:
 	@jbuilder clean
