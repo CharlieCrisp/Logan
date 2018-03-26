@@ -51,9 +51,9 @@ let rec get_branches branches =
   List.fold_left (fun acc branch -> (get_branch branch)::acc) [] branches
 
 let compare str1 str2 = 
-  if str1 == "Genesis Commit" then 
+  if str1 = "Genesis Commit" then 
     1
-  else if str2 == "Genesis Commit" then
+  else if str2 = "Genesis Commit" then
     -1
   else 
   let item1 = Coder.decode_log_item str1 in 
