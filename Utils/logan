@@ -64,7 +64,7 @@ case $SUBCOMMAND in
       printf "This command will run a participant demo.\n"
       exit 1
     fi
-    if [[( ! (-z "$leader") ) && ( ! $synced  )]]; then 
+    if [[( ! (-z "$leader") ) && ( "$synced" = false  )]]; then 
       printf "\e[1;34m[LOGAN]\e[0;39m Syncing Git\n"
       sync_git $leader
       printf "\e[1;34m[LOGAN]\e[0;39m Finished Syncing Git\nPress enter to continue"
@@ -114,7 +114,7 @@ case $SUBCOMMAND in
           ;;
       esac
     done
-    if [[( ! (-z "$leader") ) && ( ! $synced  )]]; then 
+    if [[( ! (-z "$leader") ) && ( "$synced" = false  )]]; then 
       printf "\e[1;34m[LOGAN]\e[0;39m Syncing Git\n"
       sync_git $leader
       printf "\e[1;34m[LOGAN]\e[0;39m Finished Syncing Git\nPress enter to continue"
@@ -155,7 +155,7 @@ case $SUBCOMMAND in
           ;;
       esac
     done
-    if [[( ! (-z "$leader") ) && ( ! $synced  )]]; then 
+    if [[( ! (-z "$leader") ) && ( "$synced" = false )]]; then 
       printf "\e[1;34m[LOGAN]\e[0;39m Syncing Git\n"
       sync_git $leader
       printf "\e[1;34m[LOGAN]\e[0;39m Finished Syncing Git\nPress enter to continue"
