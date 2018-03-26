@@ -28,7 +28,7 @@ let find_matching item list =
     | (x::xs) -> (let comparison_item = Coder.decode_log_item x in 
       if Coder.is_equal comparison_item item_decoded 
       then 
-        Some((item_decoded, comparison_item), xs)
+        Some((item_decoded, x), xs)
       else 
         loop xs )
     | [] -> None
@@ -39,8 +39,9 @@ let rec log_all_matching mempool_list blockchain_list = match mempool_list with
   | (x::xs) when x = "Genesis Commit" -> log_all_matching xs blockchain_list
   | (x::xs) -> let opt = find_matching x blockchain_list in (
     match opt with 
-      | Some((mempool_item,blockchain_item), new_blockchain) ->
-        Logger.log (Printf.sprintf "%f %f %f %s" (Coder.get_time mempool_item) (Coder.get_time blockchain_item) (Coder.get_rate mempool_item) (Coder.get_machine mempool_item));
+      | Some((mempool_item, blockchain_item), new_blockchain) ->
+        Logger.log (Printf.sprintf "%f %f %f %s" (Coder.get_time mempool_item) (Coder.get_time (Coder.decode_log_item blockchain_item)) (Coder.get_rate mempool_item) (Coder.get_machine mempool_item));
+        let new_blockchain = List.filter (fun item -> (compare item blockchain_item) != 0) blockchain_list in
         log_all_matching xs new_blockchain
       | _ ->  Logger.log (Printf.sprintf "%f" (Coder.get_time (Coder.decode_log_item x)));
         log_all_matching xs blockchain_list )
@@ -71,6 +72,7 @@ let log_list_remotes () =
   IrminLogBlock.read_all blockchain_master_branch [] >>= fun blockchain_list ->
   let items = List.fold_left (fun acc bra -> let items = run @@ IrminLogLeadMem.read_all bra [] in items @ acc) [] branches in
   let sorted_items = List.sort compare items in
+  Printf.printf "%i\n" (List.length items);
   Lwt.return @@ log_all_matching sorted_items blockchain_list;;
 
 let log_list_local () =
