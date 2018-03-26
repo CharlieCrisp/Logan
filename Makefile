@@ -12,6 +12,7 @@ test:
 	@jbuilder build Code/Tests/AddNumberToBlockchain.exe
 	@jbuilder build Code/Tests/PrintBlockchains.exe
 	@jbuilder build Code/Tests/GetSize.exe
+	@jbuilder build Code/Tests/OCamlGitPull.exe
 	@mkdir -p bin
 	@mv _build/default/Code/Tests/ThroughputLatencyTester.exe bin/ThroughputLatencyTester
 	@mv _build/default/Code/Tests/TestLeader.exe bin/TestLeader
@@ -19,6 +20,7 @@ test:
 	@mv _build/default/Code/Tests/AddNumberToBlockchain.exe bin/AddNumberToBlockchain
 	@mv _build/default/Code/Tests/PrintBlockchains.exe bin/PrintBlockchains
 	@mv _build/default/Code/Tests/GetSize.exe bin/GetSize
+	@mv _build/default/Code/Tests/OCamlGitPull.exe bin/OCamlGitPull
 
 clean:
 	@jbuilder clean
