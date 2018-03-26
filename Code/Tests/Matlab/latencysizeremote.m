@@ -1,13 +1,12 @@
 clear
 format long;
-data = importdata("../../../../Documents/PartIILogs/remote_worker_latency_size.log", ' ');
+data = importdata("~/Documents/PartIILogs/remote_worker_latency_size2.log", ' ');
 %filter NaN rows
 data(any(isnan(data), 2), :) = [];
-data = flipud(data);
+
 
 %calculate latencies
 result = data(:,2) - data(:,1);
-result = result * 1000;
 
 %Remove outliers
 mean = mean(result);
@@ -27,11 +26,9 @@ result = transpose(sum(y, 1) / n);
 %plot
 transactions = n*(1:length(result));
 plot(transactions, result);
-ylim([0 60]);
-xlim([0 4500]);
 xlabel("Blockchain Size, transactions");
-ylabel("Latency, ms");
-
+ylabel("Latency, s");
+ylim([1.5 15.0]);
 
 %least mean squares plot
 % X = [ones(length(result),1) (transactions')];
