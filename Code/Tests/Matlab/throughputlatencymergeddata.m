@@ -1,5 +1,5 @@
 format long;
-data = importdata("../../../output.log", ' ');
+data = importdata("../../../../../PartIILogs/single_local_worker_no_delay.log", ' ');
 %filter NaN rows
 data(any(isnan(data), 2), :) = [];
 data = flipud(data);

@@ -23,7 +23,7 @@ for i = 1:size(data,1)-2
     if (result_index > result_length) 
         break
     end
-    if not(throughput > 20 || latency > 20)
+    if not(latency > 20)
         data_size(result_index) = data_size(result_index) + 1;
         throughput_data(result_index) = throughput_data(result_index) + throughput;
         latency_means(result_index) = latency_means(result_index) + latency;

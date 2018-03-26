@@ -1,16 +1,16 @@
 format long;
-data = importdata("../../../output.log", ' ');
+data = importdata("~/Documents/PartIILogs/single_local_worker_anil_2.log", ' ');
 %filter NaN rows
 data(any(isnan(data), 2), :) = [];
 data = flipud(data);
 rates = unique(data(:,3));
-result_length = size(rates,1);
+result_length = 45;
 
 [latency_means, throughput_data] = get_data_means(data, result_length);
 
 [latency_deviation_pos, latency_deviation_neg] = get_data_std(data, latency_means, result_length);
 
-data = remove_outliers(data, latency_means, latency_deviation_neg, latency_deviation_pos);
+data = remove_outliers(data, latency_means, latency_deviation_neg, latency_deviation_pos, result_length);
 
 [latency_means, throughput_data] = get_data_means(data, result_length);
 
