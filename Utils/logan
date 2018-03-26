@@ -27,7 +27,7 @@ case $SUBCOMMAND in
           ;;
       esac
     done
-    if [[ $3 -eq "help" ]]; then 
+    if [[ "$2" = "help" ]]; then 
       printf "This command will run a leader node.\nUse -d to run a demo\n"
       exit 1
     fi
@@ -60,7 +60,7 @@ case $SUBCOMMAND in
           ;;
       esac
     done
-    if [[ $3 -eq "help" ]]; then 
+    if [[ "$2" = "help" ]]; then 
       printf "This command will run a participant demo.\n"
       exit 1
     fi
