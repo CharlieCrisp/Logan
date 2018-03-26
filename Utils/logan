@@ -93,6 +93,9 @@ case $SUBCOMMAND in
     PrintBlockchains $ARGUMENTS
     ;;
   gather)
+    if [[( ! (-z "$participants") )]]; then
+      ARGUMENTS="$ARGUMENTS -r ${participants[*]}"
+    fi 
     GatherResults $ARGUMENTS
     ;;
   test)
