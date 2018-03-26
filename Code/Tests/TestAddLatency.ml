@@ -20,9 +20,12 @@ module Config : Blockchain.I_ParticipantConfig with type t = transaction = struc
 end
 
 module Participant = Blockchain.MakeParticipant(Config)
+let log_file = open_out_gen [Open_creat; Open_text; Open_append] 0o640 "output.log"
+
+let log f = Printf.fprintf log_file "%f\n%!" f
 
 let record n = match !recorded with 
-  | 20 -> Printf.printf "%f\n%!" ((!running_total /. 20.0) *.1000.0); recorded := 0; running_total := n
+  | 20 -> log ((!running_total /. 20.0) *.1000.0); recorded := 0; running_total := n
   | _ -> recorded := !recorded + 1; running_total := !running_total +. n
 
 let rec add_transactions = function
@@ -34,4 +37,5 @@ let rec add_transactions = function
     add_transactions (n-1);;
 
 Printf.printf "Printing average txn time in ms, averged over 20 txns:\n%!";;
-run @@ add_transactions 4000;;
+run @@ add_transactions 15000;;
+close_out log_file;;
