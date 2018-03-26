@@ -47,7 +47,7 @@ let rec log_all_matching mempool_list blockchain_list = match mempool_list with
   | [] -> ()
 
 let rec get_branches branches = 
-  let get_branch branch = run @@ IrminLogLeadMem.get_branch mempool_repo branch in 
+  let get_branch branch = run @@ IrminLogLeadMem.get_branch lead_mempool_repo branch in 
   List.fold_left (fun acc branch -> (get_branch branch)::acc) [] branches
 
 let compare str1 str2 = 
