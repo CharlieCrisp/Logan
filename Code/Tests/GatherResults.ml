@@ -58,7 +58,13 @@ let compare str1 str2 =
   else 
   let item1 = Coder.decode_log_item str1 in 
   let item2 = Coder.decode_log_item str2 in
-  int_of_float ((Coder.get_time item1) -. (Coder.get_time item2))
+  let dif = (Coder.get_time item1) -. (Coder.get_time item2) in
+  if dif > 0.0 then
+    1
+  else if dif < 0.0 then
+    -1
+  else 
+    0
 
 let log_list_remotes () =
   let branches = get_branches !remotes in
