@@ -41,7 +41,8 @@ let rec get_first num lst = match num, lst with
 
 let rec print_lead_mempool_list repo = function 
   | [] -> ()
-  | x::xs -> let branch = run @@ IrminLogLeadMem.get_branch repo x in
+  | x::xs -> Printf.printf "------------ Printing /lead/mempool %s ------------\n%!" x;
+    let branch = run @@ IrminLogLeadMem.get_branch repo x in
     let mempool_list = run @@ IrminLogLeadMem.read_all branch [] in
     if mempool_list == [] then begin
       Printf.printf "No items found\n%!";
@@ -50,10 +51,13 @@ let rec print_lead_mempool_list repo = function
     else
       match !f, !l with 
         | None, None -> print_list mempool_list;
+          Printf.printf "------------ Finished /lead/mempool %s ------------\n%!" x;
           print_lead_mempool_list repo xs
         | Some(first), _ -> print_list (get_first first mempool_list);
+          Printf.printf "------------ Finished /lead/mempool %s ------------\n%!" x;
           print_lead_mempool_list repo xs
         | None, Some(last) -> print_list (get_first last (List.rev mempool_list));
+          Printf.printf "------------ Finished /lead/mempool %s ------------\n%!" x;
           print_lead_mempool_list repo xs
 
 let rec print_local_mempool () = 
@@ -94,13 +98,19 @@ let rec print_non_leader_mempool user =
 
 let print () = 
   if !blockchain then begin
-    print_local_blockchain ()
+    Printf.printf "------------ Printing Blockchain ------------\n%!";
+    print_local_blockchain ();
+    Printf.printf "------------ Finished Blockchain ------------\n%!"
   end;
   if !leader_participant then begin
-    print_local_mempool ()
+    Printf.printf "------------ Printing /part/mempool master ------------\n%!";
+    print_local_mempool ();
+    Printf.printf "------------ Finished /part/mempool master ------------\n%!"
   end;
   (match !user with 
-    | Some(u) -> print_non_leader_mempool u
+    | Some(u) -> Printf.printf "------------ Printing /part/mempool %s ------------\n%!" u;
+      print_non_leader_mempool u;
+      Printf.printf "------------ Finished /part/mempool %s ------------\n%!" u;
     | None -> ());
   if !mempools != [] then begin
     let mempool_repo = run @@ IrminLogLeadMem.init ~root:"/tmp/ezirminl/lead/mempool" ~bare:true () in
