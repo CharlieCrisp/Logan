@@ -1,5 +1,5 @@
 format long;
-data = importdata("~/Documents/PartIILogs/single_local_worker_anil_3.log", ' ');
+data = importdata("~/Documents/PartIILogs/two_local_workers.log", ' ');
 %filter NaN rows
 data(any(isnan(data), 2), :) = [];
 data = flipud(data);
