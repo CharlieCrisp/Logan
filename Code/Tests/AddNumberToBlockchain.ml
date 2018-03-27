@@ -56,11 +56,13 @@ let print_status n = Printf.printf "Added %i transactions \r%!" (!itr - n)
 
 let rec add_transactions = function
   | 0 -> Printf.printf "\n%!"; Lwt.return ()
-  | n -> Participant.add_transaction_to_mempool (string_of_int(!id), string_of_int(n), 1.0) >>= fun _ ->
+  | n -> 
     (match !delay with 
-      | None -> print_status n;
+      | None -> Participant.add_transaction_to_mempool (string_of_int(!id), string_of_int(n), 1.0) >>= fun _ ->
+        print_status n;
         add_transactions (n-1)
-      | Some(del) -> Lwt_unix.sleep del >>= fun _ ->
+      | Some(del) -> Participant.add_transaction_to_mempool (string_of_int(!id), string_of_int(n), del) >>= fun _ ->
+        Lwt_unix.sleep del >>= fun _ ->
         print_status n;
         add_transactions(n-1))
 
