@@ -3,8 +3,12 @@ USER=$1
 HOST=$2 
 if [ -z "$USER" ] || [ -z "$HOST" ] ;
 then
-echo "Please give me something to sync from, in the form user host" 
-else
-LOCATION="$USER@$HOST:/home/$USER/Logan/output.log"
-scp $LOCATION .
+  echo "Please give me something to sync from, in the form user host" 
+  exit 1
 fi
+if [ "$USER" = "root" ] ; then 
+  LOCATION="$USER@$HOST:/$USER/Logan/output.log"
+else 
+  LOCATION="$USER@$HOST:/home/$USER/Logan/output.log" 
+fi
+scp $LOCATION .
