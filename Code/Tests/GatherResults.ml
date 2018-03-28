@@ -14,6 +14,8 @@ let mempool_repo = run @@ IrminLogMem.init ~root: "/tmp/ezirminl/part/mempool" ~
 let mempool_master_branch = Lwt_main.run @@ IrminLogMem.master mempool_repo
 let lead_mempool_repo = run @@ IrminLogLeadMem.init ~root: "/tmp/ezirminl/lead/mempool" ~bare:true ()
 let lead_mempool_master_branch = Lwt_main.run @@ IrminLogLeadMem.master lead_mempool_repo
+let local = ref false
+
 
 let rec log_list list = match list with 
     | (x::[]) -> Lwt.return @@ Logger.log x
@@ -67,11 +69,11 @@ let compare str1 str2 =
   else 
     0
 
-let log_list_remotes () =
+let log_list_remotes local_participant_items =
   let branches = get_branches !remotes in
   IrminLogBlock.read_all blockchain_master_branch [] >>= fun blockchain_list ->
   let items = List.fold_left (fun acc bra -> let items = run @@ IrminLogLeadMem.read_all bra [] in items @ acc) [] branches in
-  let sorted_items = List.sort compare items in
+  let sorted_items = List.sort compare (items @ local_participant_items) in
   Printf.printf "%i\n" (List.length items);
   Lwt.return @@ log_all_matching sorted_items blockchain_list;;
 
@@ -82,9 +84,13 @@ let log_list_local () =
   Printf.printf "Mempool size: %i\n" (List.length mempool_list);
   Lwt.return @@ log_all_matching mempool_list blockchain_list;;
 
-let arg_local = ("-l", Arg.Unit (fun () -> run @@ log_list_local()), "Gather results from a local Participant")
+let arg_local = ("-l", Arg.Unit (fun () -> local := true), "Gather results from a local Participant")
 let arg_remote = ("-r", Arg.Rest (fun str -> remotes := (Str.global_replace (Str.regexp "@") "" str)::!remotes), "Gather results from remote Participants")
 let _ = Arg.parse [arg_local;arg_remote] (fun _ -> ()) ""
 
-let _ = if (!remotes != []) then
-  run @@ log_list_remotes()
+let _ = if (!remotes != [] && !local) then
+  run (IrminLogMem.read_all mempool_master_branch [] >>= log_list_remotes)
+else if (!remotes != []) then
+  run @@ log_list_remotes []
+else if !local then
+  run @@ log_list_local()
