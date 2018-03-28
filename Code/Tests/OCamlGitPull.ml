@@ -6,14 +6,14 @@ module Log = Ezirmin.FS_log(Tc.String)
 let repo = run @@ Log.init ~root:"/tmp/ezirminl/part/mempool" ~bare:true ()
 let master = run @@ Log.master repo
 let internal = run @@ Log.get_branch repo "internal"
+let wip = run @@ Log.get_branch repo "wip"
 
-let remote = Log.Sync.remote_uri "git+ssh://charlie@13.93.85.207/tmp/ezirminl/part/mempool";;
+let remote = Log.Sync.remote_uri "git+ssh://root@23.253.159.211/tmp/ezirminl/part/mempool";;
 
 let first_time = Ptime_clock.now();;
 run @@ Log.Sync.pull remote internal `Update;;
-let middle_time = Ptime_clock.now();;
 run @@ Log.Sync.pull remote master `Update;;
+run @@ Log.Sync.pull remote wip `Update;;
 let last_time = Ptime_clock.now()
-let dif1 = (Ptime.to_float_s middle_time) -. (Ptime.to_float_s first_time);;
-let dif2 = (Ptime.to_float_s last_time) -. (Ptime.to_float_s middle_time);;
-Printf.printf "Time pulling internal: %f\nTime pulling master: %f\n%!" dif1 dif2;; 
+let dif = (Ptime.to_float_s last_time) -. (Ptime.to_float_s first_time);;
+Printf.printf "%f\n" dif ;; 
