@@ -37,12 +37,4 @@ plot(git_sizes, irmin_git_bad_latency)
 plot(git_sizes, git_bad_latency);
 legend('Logan transaction latency','Irmin Pull Latency', 'Git Pull Latency')
 hold off
-%least mean squares plot
-% X = [ones(length(result),1) (transactions')];
-% size(X)
-% size(result)
-% b = X \ (result);
-% ycalc = X * b;
-% hold on
-% plot(transactions, ycalc);
-hold off
+

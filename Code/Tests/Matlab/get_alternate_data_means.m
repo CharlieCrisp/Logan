@@ -18,10 +18,8 @@ for i = 1:size(data,1)-1
     current_rate = data(i,3);
     if last_rate ~= current_rate
         last_rate = current_rate;
-        throughput = 1 / (data(i-1,1) - first_time)
-        first_time
+        throughput = 1 / (data(i-1,1) - first_time);
         first_time = t_s1;
-        data(i-2,1)
         if (result_index <= result_length)
             throughput_data(result_index) = throughput;
         end
