@@ -13,6 +13,7 @@ module type I_Config = sig
   module LogCoder: Participant.I_LogStringCoder with type t = t
   module Validator: I_Validator with type t = t
   val remotes: string list
+  val replicas: string list
 end
 
 module type I_Leader = sig
@@ -39,6 +40,7 @@ module Make (Config: I_Config) : I_Leader = struct
   let latest_cursors: IrminLogMem.cursor list ref = ref []
   let buffered_updates = ref []
   let updates_to_be_added = ref []
+  let cache_branch = ref None
 
   exception Validator_Not_Supplied
   exception Could_Not_Initialise_Blockchain
@@ -55,12 +57,20 @@ module Make (Config: I_Config) : I_Leader = struct
   let add_value_to_blockchain value = 
     IrminLogBlock.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path value
   (*Decode and re-encode value so as to get new timestamp*)
+
   let add_txn_to_blockchain value = 
+    let add_to_cache branch = (
     let txn_opt = Config.LogCoder.decode_string value in
     match txn_opt with 
       | Some(txn) -> let txn_string = Config.LogCoder.encode_string txn in
-        IrminLogBlock.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path txn_string
-      | _ -> Printf.printf "Couldn't reconstruct log item\n%!"; Lwt.return ()
+        IrminLogBlock.append ~message:"Entry added to the blockchain" branch ~path:path txn_string
+      | _ -> Printf.printf "Couldn't reconstruct log item\n%!"; Lwt.return ()) in 
+    match !cache_branch with 
+      | Some(branch) -> add_to_cache branch
+      | None -> IrminLogBlock.clone_force blockchain_master_branch "cache" >>= fun branch ->
+        cache_branch :=  Some(branch);
+        add_to_cache branch
+
   let add_list_to_blockchain list = 
     Logger.info (Printf.sprintf "Starting to add to blockchain at time %f" (Ptime.to_float_s (Ptime_clock.now()))); 
     Lwt_list.iter_s add_txn_to_blockchain list >>= fun _ ->
@@ -176,6 +186,17 @@ module Make (Config: I_Config) : I_Leader = struct
         Lwt.return (flat_map list))
       | _ -> Lwt.return []
 
+  let push_replicas () = 
+    let get_replica_command str = Sys.command (Printf.sprintf "cd /tmp/ezirminl/lead/blockchain; git push ssh://%s/tmp/ezirminl/replica/blockchain cache:cache; cd -" str) in 
+    let commands = List.map get_replica_command Config.replicas in
+    let threads = List.map (fun com -> Lwt.return com >>= fun _ -> Lwt.return ()) commands in
+    Lwt.join threads
+
+  let merge_blockchain () = 
+    match !cache_branch with 
+      | Some(branch) -> IrminLogBlock.merge branch ~into: blockchain_master_branch
+      | None -> Lwt.return ()
+
   let rec run_leader () = 
     if !interrupted_bool then Lwt_mvar.put interrupted_mvar true >>= fun _ -> Lwt.return () else
     update_mempool() >>= 
@@ -186,8 +207,10 @@ module Make (Config: I_Config) : I_Leader = struct
     update_cursors latest_known_part_cursor >>= fun _ ->
     if all_updates = [] then run_leader() else
     let perform_update updates = (  
-      add_list_to_blockchain updates >>= fun _ ->
-      Lwt.return @@ Logger.info (Printf.sprintf "\027[95mFound %i New Updates\027[39m\n%!" (List.length updates))>>= fun _ ->
+      add_list_to_blockchain updates >>= 
+      push_replicas >>=
+      merge_blockchain >>= fun _ ->
+      Lwt.return @@ Logger.info (Printf.sprintf "\027[95mAdded %i New Updates\027[39m\n%!" (List.length updates))>>= fun _ ->
       run_leader ()
       ) in
     let decoded_updates = flat_map (List.map Config.LogCoder.decode_string all_updates) in

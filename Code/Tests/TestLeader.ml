@@ -19,6 +19,7 @@ module Config : Blockchain.I_LeaderConfig with type t = string * string * float 
     let filter list = Lwt.return list
   end
   let remotes = remotes
+  let replicas = []
 end
 
 module Leader = Blockchain.MakeLeader(Config);;
