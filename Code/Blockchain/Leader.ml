@@ -61,7 +61,7 @@ module Make (Config: I_Config) : I_Leader = struct
       let checkout_new_master = Printf.sprintf "git checkout -b %s; " userhost in
       let set_master_upstream = Printf.sprintf "git branch -u %s/master; " userhost in 
       let checkout_internal = "git checkout internal; " in
-      let checkout_new_internal = Printf.sprintf "git checkout -b %s-internal; " userhost in 
+      let checkout_new_internal = Printf.sprintf "git checkout -b %sinternal; " userhost in 
       let set_internal_upstream = Printf.sprintf "git branch -u %s/internal; " userhost in 
       let command = add_remote ^ fetch_remote ^ checkout_master ^ checkout_new_master ^ set_master_upstream ^ 
         checkout_internal ^ checkout_new_internal ^ set_internal_upstream ^ checkout_master in 
@@ -76,8 +76,9 @@ module Make (Config: I_Config) : I_Leader = struct
   let update_mempool () = 
     let get_pull_promise userathost = (
       let userhost = remove_at userathost in 
-      let command = Printf.sprintf "git pull %s" userhost in 
-      Lwt.return @@ Sys.command command >>= fun _ ->
+      let pull_master = Printf.sprintf "git pull %s master:%s; " userhost userhost in 
+      let pull_internal = Printf.sprintf "git pull %s internal:%sinternal" userhost userhost in 
+      Lwt.return @@ Sys.command (pull_master ^ pull_internal) >>= fun _ ->
       Lwt.return ()) in 
     let pull_remote_promise_list = List.map get_pull_promise userathosts in 
     Lwt.return @@ Sys.command "cd /tmp/ezirminl/lead/mempool" >>= fun _ ->
