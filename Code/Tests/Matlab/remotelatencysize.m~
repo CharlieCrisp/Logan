@@ -7,7 +7,7 @@ data3 = importdata("../../../../Documents/PartIILogs/PureGit/single_throughput_p
 %calculate latencies
 result = data(:,2) - data(:,1);
 result2 = data2(:,2) - data2(:,1);
-result3 = data3(:,2) - data3(:,1);
+result3 = data3(:,2) - data2(:,1);
 %calculate average of every n items
 
 n = 50;
@@ -21,18 +21,10 @@ M2  = s2 - mod(s2, n);
 y2  = reshape(result2(1:M2), n, []);
 result2 = transpose(sum(y2, 1) / n);
 
-s3 = size(result3, 1);
-M3  = s3 - mod(s3, n);
-y3  = reshape(result3(1:M3), n, []);
-result3 = transpose(sum(y3, 1) / n);
-
 
 %plot
 transactions = n*(1:length(result));
 transactions2 = n*(1:length(result2));
-transactions3 = n*(1:length(result3));
-plot(transactions, result, transactions2, result2, transactions3, result3);
+plot(transactions, result, transactions2, result2);
 xlabel("Blockchain Size, transactions");
 ylabel("Latency, s");
-l = legend("Using Ezirmin pull", "Using Git (~70 txns/s)", "Using Git (~10 txns/s)");
-l.Location = 'northwest';
