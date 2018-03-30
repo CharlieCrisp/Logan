@@ -76,10 +76,10 @@ module Make (Config: I_Config) : I_Leader = struct
     let pull_mempool userathost = (
       let userhost = remove_at userathost in 
       let cd_directory = "cd /tmp/ezirminl/lead/mempool; " in
-      let checkout_master = Printf.sprintf "git checkout %s; " userhost in
-      let pull_master = Printf.sprintf "git pull; " in 
-      let checkout_internal = Printf.sprintf "git checkout %sinternal; " userhost in
-      let pull_internal = Printf.sprintf "git pull; " in 
+      let checkout_master = Printf.sprintf "git checkout %s --quiet; " userhost in
+      let pull_master = Printf.sprintf "git pull --quiet >/dev/null; " in 
+      let checkout_internal = Printf.sprintf "git checkout %sinternal --quiet; " userhost in
+      let pull_internal = Printf.sprintf "git pull --quiet >/dev/null; " in 
       let _ = Sys.command (cd_directory ^ checkout_master ^ pull_master ^ checkout_internal ^ pull_internal) in
       ()) in 
     let _ = List.iter pull_mempool userathosts in
