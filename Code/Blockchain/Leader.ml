@@ -55,6 +55,7 @@ module Make (Config: I_Config) : I_Leader = struct
   let add_all_remotes () = 
     let add_single_remote userathost = (
       let userhost = remove_at userathost in 
+      let cd_directory = "cd /tmp/ezirminl/lead/mempool; " in
       let add_remote = Printf.sprintf "git remote add %s ssh://%s/tmp/ezirminl/part/mempool; " userhost userathost in 
       let fetch_remote = Printf.sprintf "git fetch %s; " userhost in 
       let checkout_master = "git checkout master; " in
@@ -63,27 +64,24 @@ module Make (Config: I_Config) : I_Leader = struct
       let checkout_internal = "git checkout internal; " in
       let checkout_new_internal = Printf.sprintf "git checkout -b %sinternal; " userhost in 
       let set_internal_upstream = Printf.sprintf "git branch -u %s/internal; " userhost in 
-      let command = add_remote ^ fetch_remote ^ checkout_master ^ checkout_new_master ^ set_master_upstream ^ 
+      let command = cd_directory ^ add_remote ^ fetch_remote ^ checkout_master ^ checkout_new_master ^ set_master_upstream ^ 
         checkout_internal ^ checkout_new_internal ^ set_internal_upstream ^ checkout_master in 
       Lwt.return @@ Sys.command command >>= fun _ ->
       Lwt.return () ) in 
     let add_remote_promise_list = List.map add_single_remote userathosts in
-    Lwt.return @@ Sys.command "cd /tmp/ezirminl/lead/mempool" >>= fun _ ->
     Lwt.join add_remote_promise_list >>= fun _ ->
-    Lwt.return @@ Sys.command "cd - " >>= fun _ ->
     Lwt.return ()
 
   let update_mempool () = 
     let get_pull_promise userathost = (
       let userhost = remove_at userathost in 
+      let cd_directory = "cd /tmp/ezirminl/lead/mempool; " in
       let pull_master = Printf.sprintf "git pull %s master:%s; " userhost userhost in 
       let pull_internal = Printf.sprintf "git pull %s internal:%sinternal" userhost userhost in 
-      Lwt.return @@ Sys.command (pull_master ^ pull_internal) >>= fun _ ->
+      Lwt.return @@ Sys.command (cd_directory ^ pull_master ^ pull_internal) >>= fun _ ->
       Lwt.return ()) in 
     let pull_remote_promise_list = List.map get_pull_promise userathosts in 
-    Lwt.return @@ Sys.command "cd /tmp/ezirminl/lead/mempool" >>= fun _ ->
     Lwt.join pull_remote_promise_list >>= fun _ ->
-    Lwt.return @@ Sys.command "cd - " >>= fun _ ->
     Lwt.return ()
 
   let get = function 
