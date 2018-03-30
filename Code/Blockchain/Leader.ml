@@ -243,7 +243,6 @@ module Make (Config: I_Config) : I_Leader = struct
 
   let fail_nicely str = interrupted_bool := true;
     run (Lwt_mvar.take interrupted_mvar >>= fun _ -> 
-      IrminLogBlock.read_all blockchain_master_branch ~path:path >>= fun blockchain ->
       Lwt.return @@ Printf.printf "\nHalting execution due to: %s%!" str)
     
   let register_handlers () = 
