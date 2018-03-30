@@ -35,8 +35,13 @@ module Make (Config: I_Config) : I_Leader = struct
   let part_mempool_master_branch = run @@ IrminLogPartMem.master mempool_local_repo
   let internal_branch = run @@ IrminLogMem.get_branch mempool_repo "internal"
   let part_mempool_cursor: IrminLogPartMem.cursor option ref = ref None
-  let remotes_branches_names = let full_uris = List.map (fun str -> (Printf.sprintf "git+ssh://%s/tmp/ezirminl/part/mempool" str, str)) Config.remotes in
-   List.map (fun (str1,str2) -> (IrminLogMem.Sync.remote_uri str1, run (IrminLogMem.get_branch mempool_repo (Str.global_replace (Str.regexp "@")"" str2)), str2)) full_uris
+
+  (*Do in setup*)
+  let mem_branches = let get_branch str = run (IrminLogMem.get_branch mempool_repo (Str.global_replace (Str.regexp "@")"" str)) in
+    List.map (fun str -> get_branch str) Config.remotes
+
+  (*tuples of *)
+  let userathosts = Config.remotes
   let latest_cursors: IrminLogMem.cursor list ref = ref []
   let buffered_updates = ref []
   let updates_to_be_added = ref []
@@ -46,13 +51,42 @@ module Make (Config: I_Config) : I_Leader = struct
   exception Could_Not_Initialise_Blockchain
   exception Option_Unwrapping
 
-  let ignore_lwt t = t >|= fun _ -> ()
+  let add_all_remotes () = 
+    let add_single_remote userathost = (
+      let userhost = Str.global_replace (Str.regexp "@")"" userathost in 
+      let add_remote = Printf.sprintf "git remote add %s ssh://%s/tmp/ezirminl/part/mempool; " userhost userathost in 
+      let fetch_remote = Printf.sprintf "git fetch %s; " userhost in 
+      let checkout_master = "git checkout master; " in
+      let checkout_new_master = Printf.sprintf "git checkout -b %s-master; " userhost in
+      let set_master_upstream = Printf.sprintf "git branch -u %s/master; " userhost in 
+      let checkout_internal = "git checkout internal; " in
+      let checkout_new_internal = Printf.sprintf "git checkout -b %s-internal; " userhost in 
+      let set_internal_upstream = Printf.sprintf "git branch -u %s/internal; " userhost in 
+      let command = add_remote ^ fetch_remote ^ checkout_master ^ checkout_new_master ^ set_master_upstream ^ 
+        checkout_internal ^ checkout_new_internal ^ set_internal_upstream ^ checkout_master in 
+      Lwt.return @@ Sys.command command >>= fun _ ->
+      Lwt.return () ) in 
+    let add_remote_promise_list = List.map add_single_remote userathosts in
+    Lwt.return @@ Sys.command "cd /tmp/ezirminl/lead/mempool" >>= fun _ ->
+    Lwt.join add_remote_promise_list >>= fun _ ->
+    Lwt.return @@ Sys.command "cd - " >>= fun _ ->
+    Lwt.return ()
+
+  let update_mempool () = 
+    let get_pull_promise userathost = (
+      let userhost = Str.global_replace (Str.regexp "@") "" userathost in 
+      let command = Printf.sprintf "git pull %s" userhost in 
+      Lwt.return @@ Sys.command command >>= fun _ ->
+      Lwt.return ()) in 
+    let pull_remote_promise_list = List.map get_pull_promise userathosts in 
+    Lwt.return @@ Sys.command "cd /tmp/ezirminl/lead/mempool" >>= fun _ ->
+    Lwt.join pull_remote_promise_list >>= fun _ ->
+    Lwt.return @@ Sys.command "cd - " >>= fun _ ->
+    Lwt.return ()
+
   let get = function 
     | Some x -> x
     | None -> raise Option_Unwrapping
-
-  let get_mempool_pull_promise remote_mem branch = (ignore_lwt @@ IrminLogMem.Sync.pull remote_mem internal_branch `Merge,
-    ignore_lwt @@ IrminLogMem.Sync.pull remote_mem branch `Merge)
 
   let add_value_to_blockchain value = 
     IrminLogBlock.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path value
@@ -131,12 +165,12 @@ module Make (Config: I_Config) : I_Leader = struct
   (*Returns the cursor to the latest item it scanned from the participant mempool*)
   let process_new_updates () = 
     let rec get_all_rem_updates acc branches latest_known_cursors = (match branches, latest_known_cursors with
-      | ((_,branch,_)::bs), (lkc::cursors) -> get_single_mempool_updates branch lkc >>= fun updates ->
+      | (branch::bs), (lkc::cursors) -> get_single_mempool_updates branch lkc >>= fun updates ->
         get_all_rem_updates (insert_list_into_list compare_tuples (updates, acc)) bs cursors
       | _ -> Lwt.return acc)
     in 
     let get_all_updates () = (
-      get_all_rem_updates [] remotes_branches_names !latest_cursors >>= fun rem_updates ->  
+      get_all_rem_updates [] mem_branches !latest_cursors >>= fun rem_updates ->  
       get_local_part_updates() >>= fun (loc_updates, latest_known_part_mempool) ->
       Lwt.return @@ (insert_list_into_list compare_tuples (rem_updates, loc_updates), latest_known_part_mempool)) 
     in
@@ -150,18 +184,6 @@ module Make (Config: I_Config) : I_Leader = struct
           updates_to_be_added := insert_list_into_list compare_tuples (!updates_to_be_added,newuptoadd);
           buffered_updates := newup;
           Lwt.return latest_known_part_mempool
-
-  
-  let update_mempool () = 
-    let rec get_promises = function 
-      | (remote, branch, _)::xs -> let promise_main, promise_internal = get_mempool_pull_promise remote branch in
-        (promise_main::(promise_internal::(get_promises xs)))
-      | [] -> [] in 
-    let promises = get_promises remotes_branches_names in
-    try 
-      Lwt.join promises
-    with 
-      | _ -> Logger.info "Error while pulling from remote"; Lwt.return ()
    
   let interrupted_bool = ref false
   let interrupted_mvar = Lwt_mvar.create_empty()
@@ -173,9 +195,9 @@ module Make (Config: I_Config) : I_Leader = struct
     | thing -> Lwt.return ()) >>= fun _ ->
     let rec get_updated_cursors acc = function 
       | [] -> Lwt.return acc
-      | (_,branch,_)::xs -> get_updated_cursors (get(run @@ IrminLogMem.get_cursor branch ~path:path)::acc) xs
+      | branch::xs -> get_updated_cursors (get(run @@ IrminLogMem.get_cursor branch ~path:path)::acc) xs
     in 
-      get_updated_cursors [] remotes_branches_names >>= fun updated_cursors ->
+      get_updated_cursors [] mem_branches >>= fun updated_cursors ->
       latest_cursors := List.rev updated_cursors;
       Lwt.return ()
 
@@ -232,11 +254,11 @@ module Make (Config: I_Config) : I_Leader = struct
       | None -> IrminLogMem.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:path "Genesis Commit" >>= fun _ ->
         IrminLogBlock.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path "Genesis Commit" >>= fun _ ->
         (*Merge genesis block into each remote*)
-        List.iter (fun (_,branch,_) -> run @@ IrminLogMem.merge mempool_master_branch ~into: branch) remotes_branches_names; 
+        List.iter (fun branch -> run @@ IrminLogMem.merge mempool_master_branch ~into: branch) mem_branches; 
         (*Get latest cursors for all mempools*)
-        latest_cursors := List.map (fun (rem,bra,name) -> get (run @@ IrminLogMem.get_cursor bra ~path:path)) remotes_branches_names;
+        latest_cursors := List.map (fun bra -> get (run @@ IrminLogMem.get_cursor bra ~path:path)) mem_branches;
         Lwt.return ()
-      | curs -> latest_cursors := List.map (fun (rem,bra,name) -> get (run @@ IrminLogMem.get_cursor bra ~path:path)) remotes_branches_names;
+      | curs -> latest_cursors := List.map (fun bra -> get (run @@ IrminLogMem.get_cursor bra ~path:path)) mem_branches;
         Lwt.return ()
 
   let add_part_genesis_and_cursor () = IrminLogPartMem.get_cursor part_mempool_master_branch ~path:path >>= function
@@ -260,5 +282,5 @@ module Make (Config: I_Config) : I_Leader = struct
     add_part_genesis_and_cursor >>= fun _ ->
     get_all_transactions_from_blockchain () >>= fun txns ->
     Config.Validator.init txns >>= fun _ ->
-    Lwt.return run_leader
+    Lwt.return ( fun () -> add_all_remotes () >>= run_leader)
 end;;
