@@ -35,9 +35,7 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
   let has_synced = ref false
   let mempool_repo = Lwt_main.run @@ IrminLogMem.init ~root:"/tmp/ezirminl/part/mempool" ~bare:true ()
   let blockchain_repo = Lwt_main.run @@ IrminLogBlock.init ~root:"/tmp/ezirminl/lead/blockchain" ~bare:true ()
-  let mempool_master_branch = match Config.self_uri with 
-    | None -> Lwt_main.run @@ IrminLogMem.master mempool_repo
-    | Some(self) -> Lwt_main.run @@ IrminLogMem.get_branch mempool_repo (Str.global_replace (Str.regexp "@")"" self)
+  let mempool_master_branch = Lwt_main.run @@ IrminLogMem.master mempool_repo
   let blockchain_master_branch = Lwt_main.run @@ IrminLogBlock.master blockchain_repo
   let remote_mem_opt = match Config.leader_uri with 
     | Some(uri) -> Some(IrminLogMem.Sync.remote_uri (Printf.sprintf "git+ssh://%s/tmp/ezirminl/lead/mempool" uri))
