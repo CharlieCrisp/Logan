@@ -284,6 +284,7 @@ module Make (Config: I_Config) : I_Leader = struct
     get_all_transactions_from_blockchain () >>= fun txns ->
     Config.Validator.init txns >>= fun _ ->
     Lwt.return (fun () -> 
+      register_handlers ();
       add_all_remotes () >>= fun () -> 
       init_branches_and_cursors();
       Printf.printf "Ready\n%!";
