@@ -73,15 +73,16 @@ module Make (Config: I_Config) : I_Leader = struct
     Lwt.return ()
 
   let update_mempool () = 
-    let get_pull_promise userathost = (
+    let pull_mempool userathost = (
       let userhost = remove_at userathost in 
       let cd_directory = "cd /tmp/ezirminl/lead/mempool; " in
-      let pull_master = Printf.sprintf "git pull %s master:%s; " userhost userhost in 
-      let pull_internal = Printf.sprintf "git pull %s internal:%sinternal" userhost userhost in 
-      Lwt.return @@ Sys.command (cd_directory ^ pull_master ^ pull_internal) >>= fun _ ->
-      Lwt.return ()) in 
-    let pull_remote_promise_list = List.map get_pull_promise userathosts in 
-    Lwt.join pull_remote_promise_list >>= fun _ ->
+      let checkout_master = Printf.sprintf "git checkout %s; " userhost in
+      let pull_master = Printf.sprintf "git pull; " in 
+      let checkout_internal = Printf.sprintf "git checkout %sinternal; " userhost in
+      let pull_internal = Printf.sprintf "git pull; " in 
+      let _ = Sys.command (cd_directory ^ checkout_master ^ pull_master ^ checkout_internal ^ pull_internal) in
+      ()) in 
+    let _ = List.iter pull_mempool userathosts in
     Lwt.return ()
 
   let get = function 
