@@ -15,7 +15,6 @@ module Config : Blockchain.I_ParticipantConfig with type t = transaction = struc
   type t = transaction
   module LogCoder = LogStringCoder.TestLogStringCoder
   let leader_uri = None
-  let self_uri = None
   let validator = None
 end
 

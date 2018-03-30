@@ -17,7 +17,6 @@ module type I_ParticipantConfig = sig
   type t
   module LogCoder: I_LogStringCoder with type t = t
   val leader_uri: string option
-  val self_uri: string option
   val validator: (t list -> t -> bool) option
 end
 

@@ -9,7 +9,6 @@ let remote_uri = ref None
 let itr = ref 0
 let id = ref 0
 let delay = ref None
-let self_uri = ref None
 let start_time = ref (Ptime_clock.now())
 let parse_is_local str = 
   remote_uri := Some(str);
@@ -32,22 +31,18 @@ let parse_time input =
   | _ -> ()
 let parse_delay del = 
   delay := Some(del)
-let parse_self str = 
-  self_uri := Some(str)
 let remote_tuple = ("-r", Arg.String parse_is_local, "Specify the remote repository in the form user@host")
 let itr_tuple = ("-n", Arg.Int parse_itr, "Specify the number of transactions you'd like to add to the blockchain")
 let start_tuple = ("-s", Arg.String parse_time, "Specify when this should begin")
 let id_tuple = ("-i", Arg.Int parse_id, "Specify machine id")
 let delay_tuple = ("-d", Arg.Float parse_delay, "Specify delay between transactions")
-let self_tuple = ("-u", Arg.String parse_self, "Specify your own uri in the form user@host")
-let _ = Arg.parse [remote_tuple; itr_tuple; id_tuple; start_tuple; delay_tuple;self_tuple] (fun _ -> ()) ""
+let _ = Arg.parse [remote_tuple; itr_tuple; id_tuple; start_tuple; delay_tuple] (fun _ -> ()) ""
 
 type transaction = string * string * float
 module Config : Blockchain.I_ParticipantConfig with type t = transaction = struct 
   type t = transaction
   module LogCoder = LogStringCoder.TestLogStringCoder
   let leader_uri = !remote_uri
-  let self_uri = !self_uri
   let validator = None
 end
 

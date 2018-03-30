@@ -6,7 +6,6 @@ bin/lead -r remoteuser@remotehost -i 1 -s 2018031233300
 open Lwt.Infix
 open Ptime
 let remote_uri = ref None
-let self_uri = ref None
 let machine_id = ref 0
 let itr = ref 0
 let start_time = ref (Ptime_clock.now())
@@ -15,8 +14,6 @@ let parse_is_local str =
   Printf.printf "\n\027[93mUsing leader address:\027[39m %s\n%!" str
 let parse_id num = 
   machine_id := num
-let parse_self self = 
-  self_uri := Some(self)
 let parse_time input = 
   let year = int_of_string (String.sub input 0 4) in
   let month = int_of_string (String.sub input 4 2) in
@@ -35,16 +32,14 @@ let parse_time input =
 let remote_tuple = ("-r", Arg.String parse_is_local, "Specify the remote repository in the form user@host")
 let id_tuple = ("-i", Arg.Int parse_id, "Specify the machine id as a number")
 let start_tuple = ("-s", Arg.String parse_time, "Specify when this should begin")
-let self_tuple = ("-u", Arg.String parse_self, "Specify your own uri in the form user@host")
 
-let _ = Arg.parse [remote_tuple; id_tuple; start_tuple; self_tuple] (fun _ -> ()) ""
+let _ = Arg.parse [remote_tuple; id_tuple; start_tuple] (fun _ -> ()) ""
 
 type transaction = string * string * float
 module Config : Blockchain.I_ParticipantConfig with type t = transaction = struct 
   type t = transaction
   module LogCoder = LogStringCoder.TestLogStringCoder
   let leader_uri = !remote_uri
-  let self_uri = !self_uri
   let validator = None
 end
 
