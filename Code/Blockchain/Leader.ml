@@ -35,10 +35,8 @@ module Make (Config: I_Config) : I_Leader = struct
   let part_mempool_master_branch = run @@ IrminLogPartMem.master mempool_local_repo
   let internal_branch = run @@ IrminLogMem.get_branch mempool_repo "internal"
   let part_mempool_cursor: IrminLogPartMem.cursor option ref = ref None
-
   (*Do in setup*)
   let mem_branches = ref []
-
   (*tuples of *)
   let userathosts = Config.remotes
   let latest_cursors: IrminLogMem.cursor list ref = ref []
@@ -221,24 +219,38 @@ module Make (Config: I_Config) : I_Leader = struct
       | None -> Lwt.return ()
 
   let rec run_leader () = 
+    let file = open_out_gen  [Open_creat; Open_text; Open_append] 0o640 "delays.log" in
     if !interrupted_bool then Lwt_mvar.put interrupted_mvar true >>= fun _ -> Lwt.return () else
-    update_mempool() >>= 
+    Lwt.return @@ Printf.fprintf file "%f" (Ptime.to_float_s (Ptime_clock.now())) >>= 
+    update_mempool >>= fun _ ->
+    Lwt.return @@ Printf.fprintf file "%f" (Ptime.to_float_s (Ptime_clock.now())) >>= 
     process_new_updates >>= fun latest_known_part_cursor ->
+    Lwt.return @@ Printf.fprintf file "%f" (Ptime.to_float_s (Ptime_clock.now())) >>=  fun _ ->
     let all_updates = List.map (fun (x,_) -> x) !updates_to_be_added in 
+    Printf.fprintf file "%f" (Ptime.to_float_s (Ptime_clock.now()));
     updates_to_be_added := !buffered_updates;
     buffered_updates := [];
+    Printf.fprintf file "%f" (Ptime.to_float_s (Ptime_clock.now()));
     update_cursors latest_known_part_cursor >>= fun _ ->
     if all_updates = [] then run_leader() else
     let perform_update updates = (  
-      add_list_to_blockchain updates >>= 
-      push_replicas >>=
-      merge_blockchain >>= fun _ ->
+      add_list_to_blockchain updates >>= fun _ ->
+      Printf.fprintf file "%f" (Ptime.to_float_s (Ptime_clock.now()));
+      push_replicas() >>= fun _ ->
+      Printf.fprintf file "%f" (Ptime.to_float_s (Ptime_clock.now()));
+      merge_blockchain() >>= fun _ ->
+      Printf.fprintf file "%f\n" (Ptime.to_float_s (Ptime_clock.now()));
+      close_out file;
       Lwt.return @@ Logger.info (Printf.sprintf "\027[95mAdded %i New Updates\027[39m\n%!" (List.length updates))>>= fun _ ->
       run_leader ()
       ) in
+    Printf.fprintf file "%f" (Ptime.to_float_s (Ptime_clock.now()));
     let decoded_updates = flat_map (List.map Config.LogCoder.decode_string all_updates) in
+    Printf.fprintf file "%f" (Ptime.to_float_s (Ptime_clock.now()));
     Config.Validator.filter decoded_updates >>= fun new_updates ->
+    Printf.fprintf file "%f" (Ptime.to_float_s (Ptime_clock.now()));
     let new_string_updates = List.map (Config.LogCoder.encode_string) new_updates in 
+    Printf.fprintf file "%f" (Ptime.to_float_s (Ptime_clock.now()));
     perform_update new_string_updates
 
   let fail_nicely str = interrupted_bool := true;
