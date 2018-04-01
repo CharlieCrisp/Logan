@@ -208,10 +208,9 @@ module Make (Config: I_Config) : I_Leader = struct
       | _ -> Lwt.return []
 
   let push_replicas () = 
-    let get_replica_command str = Sys.command (Printf.sprintf "cd /tmp/ezirminl/lead/blockchain; git push ssh://%s/tmp/ezirminl/replica/blockchain cache:cache; cd -" str) in 
+    let get_replica_command str = Printf.sprintf "cd /tmp/ezirminl/lead/blockchain; git push ssh://%s/tmp/ezirminl/replica/blockchain push-cache:cache" str in 
     let commands = List.map get_replica_command Config.replicas in
-    let threads = List.map (fun com -> Lwt.return com >>= fun _ -> Lwt.return ()) commands in
-    Lwt.join threads
+    Lwt_list.iter_p (fun com -> Lwt.return @@ Sys.command com >>= fun _ -> Lwt.return ()) commands
 
   let merge_blockchain () = 
     match !cache_branch with 
@@ -287,6 +286,17 @@ module Make (Config: I_Config) : I_Leader = struct
           Lwt.return ()
       ) >>= 
       Lwt.return
+
+  let rec push_replicas () =
+    match Config.replicas with 
+    | [] -> Lwt.return ()
+    | _ -> let update_push_cache = 
+      "cd /tmp/ezirminl/lead/blockchain; " ^ 
+      "git branch -d push-cache; " ^ 
+      "git checkout cache; " ^ 
+      "git checkout -b push-cache" in 
+      let _ = Sys.command update_push_cache in
+      push_replicas ()
 
   let init_leader () = 
     Logger.info "Starting Leader";
