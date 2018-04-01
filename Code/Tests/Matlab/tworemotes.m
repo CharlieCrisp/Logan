@@ -1,6 +1,6 @@
 format long;
-data = importdata("~/Documents/PartIILogs/two_remotes_thrlat.log", ' ');
-data2 = importdata("~/Documents/PartIILogs/two_remotes_and_part_thrlat.log", ' ');
+data = importdata("~/Documents/PartIILogs/PureGit/throughputlatency1.log", ' ');
+data2 = importdata("~/Documents/PartIILogs/PureGit/throughputlatency2.log", ' ');
 %filter NaN rows
 rates = unique(data(:,3));
 result_length = size(rates,1);
@@ -46,6 +46,6 @@ lms2 = plot(throughput_data2, yfit2);
 lms2.Color = red;
 
 
-l = legend([p1 p2],[ "Two remote Participants" "Two remote Participants and one local Participant"]);
+l = legend([p1 p2],[ "One remote Participant and one local Participant" "One remote Participant"]);
 l.Location = 'northwest';
 hold off

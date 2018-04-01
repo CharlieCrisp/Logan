@@ -234,10 +234,6 @@ module Make (Config: I_Config) : I_Leader = struct
     if all_updates = [] then run_leader() else
     let perform_update updates = (  
       add_list_to_blockchain updates >>= fun _ ->
-      Printf.fprintf file "%f " (Ptime.to_float_s (Ptime_clock.now()));
-      push_replicas() >>= fun _ ->
-      Printf.fprintf file "%f " (Ptime.to_float_s (Ptime_clock.now()));
-      merge_blockchain() >>= fun _ ->
       Printf.fprintf file "%f\n" (Ptime.to_float_s (Ptime_clock.now()));
       close_out file;
       Lwt.return @@ Logger.info (Printf.sprintf "\027[95mAdded %i New Updates\027[39m\n%!" (List.length updates))>>= fun _ ->
@@ -296,7 +292,8 @@ module Make (Config: I_Config) : I_Leader = struct
       "git checkout cache; " ^ 
       "git checkout -b push-cache" in 
       let _ = Sys.command update_push_cache in
-      push_replicas ()
+      merge_blockchain() >>= 
+      push_replicas
 
   let init_leader () = 
     Logger.info "Starting Leader";
@@ -307,8 +304,9 @@ module Make (Config: I_Config) : I_Leader = struct
     Config.Validator.init txns >>= fun _ ->
     Lwt.return (fun () -> 
       register_handlers ();
-      add_all_remotes () >>= fun () -> 
+      add_all_remotes () >>= fun _ ->
       init_branches_and_cursors();
+      Lwt.async push_replicas;
       Printf.printf "Ready\n%!";
       run_leader())
 end;;

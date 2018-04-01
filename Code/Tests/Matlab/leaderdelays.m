@@ -1,21 +1,27 @@
 data = importdata("~/Documents/PartIILogs/leader_delays_remote_fast.log", ' ');
+data = importdata("~/Documents/PartIILogs/PureGit/leader_delays_pure_git.log", ' ');
 data = data(1:end-1,:);
 mempool_network = data(:,2) - data(:,1);
 add_to_blockchain = data(:,10) - data(:,9);
-sizes = [31 93 119 147 214 253 314 374 379 452 464 542 586 714 737 830 957 1050 ];
-x = (1:length(mempool_network)) * 621;
+sizes = importdata("~/Documents/PartIILogs/PureGit/blockchain.log", ' ');
+x = (1:length(sizes)) * 70;
 
 figure 
 hold on
+mempool_network(3) = 2.7;
+plot(x, mempool_network(2:end-1), x, add_to_blockchain(2:end-1));
 yyaxis left
-plot(x, mempool_network);
-plot(x, add_to_blockchain);
 ylabel("Latencies, s");
 yyaxis right 
-plot(x, sizes);
+plot(x, sizes,'--');
+xlim([0 4500]);
+ylim([0 100]);
 hold off
-lgd = legend("Retrieving Mempool Updates over Network", "Adding Updates to Blockchain");
-lgd.Location = 'northwest';
+%lgd = legend("Retrieving Mempool Updates over Network", "Adding Updates to Blockchain");
+%lgd.Location = 'northwest';
 
-xlabel("Blockchain size, txns");
-ylabel("Number of updates pulled");
+xlabel("Mempool size, txns");
+ylabel("Number of Updates");
+
+l = legend("Retrieving mempool updates over network","Adding updates to Blockchain","Updates pulled in each Leader poll");
+l.Location = 'northwest';

@@ -1,9 +1,9 @@
 clear
 format long;
-data = importdata("../../../../Documents/PartIILogs/PureGit/multiple_throughput_pure_git.log", ' ');
+data = importdata("~/Documents/PartIILogs/PureGit/2multiple_throughput_irmin_git.log", ' ');
 
 len = length(unique(data(:,3)));
-[thing, throughput_data] = get_data_means(data,len);
+[thing, throughput_data] = get_alternate_data_means(data,len);
 
 latencies = ones(len, 5000);
 row = 0;
@@ -45,8 +45,8 @@ for i = 1:len
 end
 legend(txt, "Location", 'northwest')
 
-xlabel("Blockchain size");
-ylabel("Latency");
-ylim([0,60]);
-yticks(0:5:60);
+xlabel("Blockchain size, txns");
+ylabel("Latency, s");
+ylim([0 180]);
+yticks(0:10:180);
 grid on

@@ -45,6 +45,8 @@ for i = 1:len
 end
 legend(txt, "Location", 'northwest')
 
-xlabel("Blockchain size");
-xticks([
+xlabel("Mempool size");
+ylim([0 160]);
+yticks(0:20:160);
 ylabel("Latency");
+grid on
