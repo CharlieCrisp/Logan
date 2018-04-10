@@ -7,7 +7,7 @@ then
   exit 1
 fi
 if [ "$USER" = "root" ] ; then 
-  LOCATION="$USER@$HOST:/$USER/Logan/output.log"
+  LOCATION="$USER@$HOST:/$USER/Logan/delays.log"
 else 
   LOCATION="$USER@$HOST:/home/$USER/Logan/output.log" 
 fi
