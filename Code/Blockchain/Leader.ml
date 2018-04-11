@@ -207,16 +207,6 @@ module Make (Config: I_Config) : I_Leader = struct
         Lwt.return (flat_map list))
       | _ -> Lwt.return []
 
-  let push_replicas () = 
-    let get_replica_command str = Printf.sprintf "cd /tmp/ezirminl/lead/blockchain; git push ssh://%s/tmp/ezirminl/replica/blockchain push-cache:cache" str in 
-    let commands = List.map get_replica_command Config.replicas in
-    Lwt_list.iter_p (fun com -> Lwt.return @@ Sys.command com >>= fun _ -> Lwt.return ()) commands
-
-  let merge_blockchain () = 
-    match !cache_branch with 
-      | Some(branch) -> IrminLogBlock.merge branch ~into: blockchain_master_branch
-      | None -> Lwt.return ()
-
   let rec run_leader () = 
     let file = open_out_gen  [Open_creat; Open_text; Open_append] 0o640 "delays.log" in
     if !interrupted_bool then Lwt_mvar.put interrupted_mvar true >>= fun _ -> Lwt.return () else
@@ -283,16 +273,23 @@ module Make (Config: I_Config) : I_Leader = struct
       ) >>= 
       Lwt.return
 
+  let merge_blockchain () = 
+    IrminLogBlock.get_branch blockchain_repo "push-cache" >>= fun push_cache ->
+    IrminLogBlock.merge push_cache ~into:blockchain_master_branch
+    
   let rec push_replicas () =
     match Config.replicas with 
     | [] -> Lwt.return ()
-    | _ -> let update_push_cache = 
+    | _ -> let update_push_cache_branch = 
       "cd /tmp/ezirminl/lead/blockchain; " ^ 
       "git branch -d push-cache; " ^ 
       "git checkout cache; " ^ 
       "git checkout -b push-cache" in 
-      let _ = Sys.command update_push_cache in
-      merge_blockchain() >>= 
+      let _ = Sys.command update_push_cache_branch in
+      let get_replica_command str = Printf.sprintf "cd /tmp/ezirminl/lead/blockchain; git push ssh://%s/tmp/ezirminl/replica/blockchain push-cache:cache" str in 
+      let commands = List.map get_replica_command Config.replicas in
+      Lwt_list.iter_p (fun com -> Lwt.return @@ Sys.command com >>= fun _ -> Lwt.return ()) commands >>= 
+      merge_blockchain >>= 
       push_replicas
 
   let init_leader () = 
