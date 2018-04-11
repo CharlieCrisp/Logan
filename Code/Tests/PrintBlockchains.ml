@@ -25,8 +25,10 @@ let run = Lwt_main.run
 let path = []
 
 let print_txn str = let txn = Coder.decode_string str in 
+  let log_item = Coder.decode_log_item str in
+  let time = Coder.get_time log_item in
   match txn with 
-    | Some((machine, txn, rate)) -> Printf.printf "Machine id: %s; Txn id: %s; Rate: %f\n%!" machine txn rate
+    | Some((machine, txn, rate)) -> Printf.printf "Time: %f; Machine id: %s; Txn id: %s; Rate: %f\n%!" time machine txn rate
     | None -> Printf.printf "Could Not Decode!\n%!"
 
 let rec print_list lst = match lst with 
