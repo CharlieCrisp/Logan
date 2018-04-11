@@ -280,7 +280,8 @@ module Make (Config: I_Config) : I_Leader = struct
   let rec push_replicas () =
     let update_push_cache_branch = 
     "cd /tmp/ezirminl/lead/blockchain; " ^ 
-    "git branch -d push-cache; " ^ 
+    "git checkout master; " ^ 
+    "git branch -d push-cache --quiet; " ^ 
     "git checkout cache; " ^ 
     "git checkout -b push-cache" in 
     let _ = Sys.command update_push_cache_branch in
