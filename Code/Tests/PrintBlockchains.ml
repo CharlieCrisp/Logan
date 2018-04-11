@@ -24,7 +24,11 @@ let _ = Arg.parse [print_blockchain;print_participant;print_first;print_last;pri
 let run = Lwt_main.run
 let path = []
 
-let print_txn str = let txn = Coder.decode_string str in 
+let print_txn str = 
+  if str = "Genesis Commit" then 
+    Printf.printf "Genesis Commit\n%!" 
+  else
+  let txn = Coder.decode_string str in 
   let log_item = Coder.decode_log_item str in
   let time = Coder.get_time log_item in
   match txn with 
