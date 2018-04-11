@@ -250,7 +250,10 @@ module Make (Config: I_Config) : I_Leader = struct
   let add_genesis () = IrminLogMem.get_cursor mempool_master_branch ~path:path >>= function
       | None -> IrminLogMem.append ~message:"Entry added to the blockchain" mempool_master_branch ~path:path "Genesis Commit" >>= fun _ ->
         IrminLogBlock.append ~message:"Entry added to the blockchain" blockchain_master_branch ~path:path "Genesis Commit" >>= fun _ ->
-        Lwt.return ()
+        IrminLogBlock.clone_force blockchain_master_branch "cache" >>= fun cache_br ->
+        cache_branch :=  Some(cache_br);
+        IrminLogBlock.merge blockchain_master_branch ~into:cache_br >>=
+        Lwt.return
       | curs -> Lwt.return ()
   
   let init_branches_and_cursors () = 
@@ -280,10 +283,10 @@ module Make (Config: I_Config) : I_Leader = struct
   let rec push_replicas () =
     let update_push_cache_branch = 
     "cd /tmp/ezirminl/lead/blockchain; " ^ 
-    "git checkout master; " ^ 
-    "git branch -d push-cache --quiet; " ^ 
-    "git checkout cache; " ^ 
-    "git checkout -b push-cache" in 
+    "git checkout master --quiet; " ^ 
+    "git branch -d push-cache --quiet 2> /dev/null; " ^ 
+    "git checkout cache --quiet; " ^ 
+    "git checkout -b push-cache --quiet" in 
     let _ = Sys.command update_push_cache_branch in
     let get_replica_command str = Printf.sprintf "cd /tmp/ezirminl/lead/blockchain; git push ssh://%s/tmp/ezirminl/replica/blockchain push-cache:cache" str in 
     let commands = List.map get_replica_command Config.replicas in
