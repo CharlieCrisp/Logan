@@ -30,9 +30,11 @@ let print_txn str =
   else
   let txn = Coder.decode_string str in 
   let log_item = Coder.decode_log_item str in
-  let time = Coder.get_time log_item in
+  let time_orig = Coder.get_time log_item in
+  let time_int = (int_of_float time_orig) mod 100000 in
+  let time = (float_of_int time_int) +. time_orig -. (float_of_int (int_of_float time_orig)) in 
   match txn with 
-    | Some((machine, txn, rate)) -> Printf.printf "Time: %f; Machine id: %s; Txn id: %s; Rate: %f\n%!" time machine txn rate
+    | Some((machine, txn, rate)) -> Printf.printf "Time: %.3f; Machine id: %s; Txn id: %s; Rate: %f\n%!" time machine txn rate
     | None -> Printf.printf "Could Not Decode!\n%!"
 
 let rec print_list lst = match lst with 
