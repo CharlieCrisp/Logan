@@ -288,7 +288,7 @@ module Make (Config: I_Config) : I_Leader = struct
     IrminLogBlock.get_cursor blockchain_master_branch ~path:path >>= function
       | Some curs -> (
         IrminLogBlock.read curs ~num_items:1 >>= function 
-          | [x], _ -> let id = Config.LogCoder.get_id (Config.LogCoder.decode_log_item x) in
+          | [x], _ when x <> "Genesis Commit" -> let id = Config.LogCoder.get_id (Config.LogCoder.decode_log_item x) in
             Lwt.return @@ Some id
           | _ -> Lwt.return @@ None)
       | None -> Lwt.return @@ None
@@ -299,29 +299,26 @@ module Make (Config: I_Config) : I_Leader = struct
       Printf.fprintf file  "%f\n%!" (time -. timestamp);
       pop_and_log file time (n-1)
 
-  let rec push_replicas () =
-    let update_push_cache_branch = 
-    "cd /tmp/ezirminl/lead/blockchain; " ^ 
-    "git checkout master --quiet; " ^ 
-    "git branch -d push-cache --quiet 2> /dev/null; " ^ 
-    "git checkout cache --quiet; " ^ 
-    "git checkout -b push-cache --quiet" in 
-    let _ = Sys.command update_push_cache_branch in
-    let get_replica_command str = Printf.sprintf "cd /tmp/ezirminl/lead/blockchain; git push ssh://%s/tmp/ezirminl/replica/blockchain push-cache:cache" str in 
-    let commands = List.map get_replica_command Config.replicas in
-    Lwt_list.iter_p (fun com -> Lwt.return @@ Sys.command com >>= fun _ -> Lwt.return ()) commands >>= 
-    merge_blockchain >>= 
-    get_latest_id >>= function
-      | Some latest_id -> (
-        let n = latest_id - !last_popped in
-        let now = Ptime.to_float_s (Ptime_clock.now()) in
-        let file = open_out_gen  [Open_creat; Open_text; Open_append] 0o640 "confirmationtimes.log" in
-        pop_and_log file now n;
-        close_out file;
-        last_popped := latest_id;
-        push_replicas ()
-      )
-      | None -> push_replicas()
+  let rec push_replicas () =	 
+    match !cache_branch with 
+      | None -> push_replicas ()
+      | Some cache_branch -> (
+        IrminLogBlock.clone_force cache_branch "push-cache" >>= fun push_cache_branch ->
+        let get_replica_command str = Printf.sprintf "cd /tmp/ezirminl/lead/blockchain; git push ssh://%s/tmp/ezirminl/replica/blockchain push-cache:cache" str in 
+        let commands = List.map get_replica_command Config.replicas in
+        Lwt_list.iter_p (fun com -> Lwt.return @@ Sys.command com >>= fun _ -> Lwt.return ()) commands >>= 
+        merge_blockchain >>= 
+        get_latest_id >>= function
+          | Some latest_id -> (
+            let n = latest_id - !last_popped in
+            let now = Ptime.to_float_s (Ptime_clock.now()) in
+            let file = open_out_gen  [Open_creat; Open_text; Open_append] 0o640 "confirmationtimes.log" in
+            pop_and_log file now n;
+            close_out file;
+            last_popped := latest_id;
+            push_replicas ()
+          )
+          | None -> push_replicas())
 
   let init_leader () = 
     Logger.info "Starting Leader";
