@@ -43,6 +43,7 @@ module Make (Config: I_Config) : I_Leader = struct
   let buffered_updates = ref []
   let updates_to_be_added = ref []
   let cache_branch = ref None
+  let running_id = ref 1
   let txn_queue = Queue.create ()
   let last_popped = ref 0
 
@@ -97,7 +98,8 @@ module Make (Config: I_Config) : I_Leader = struct
     let add_to_cache branch = (
     let txn_opt = Config.LogCoder.decode_string value in
     match txn_opt with 
-      | Some(txn) -> let txn_string = Config.LogCoder.encode_string txn in
+      | Some(txn) -> let txn_string = Config.LogCoder.encode_string txn (Some (string_of_int !running_id)) in
+        running_id := !running_id + 1;
         Queue.push (Ptime.to_float_s (Ptime_clock.now())) txn_queue;
         IrminLogBlock.append ~message:"Entry added to the blockchain" branch ~path:path txn_string
       | _ -> Printf.printf "Couldn't reconstruct log item\n%!"; Lwt.return ()) in 
@@ -237,7 +239,7 @@ module Make (Config: I_Config) : I_Leader = struct
     Printf.fprintf file "%f " (Ptime.to_float_s (Ptime_clock.now()));
     Config.Validator.filter decoded_updates >>= fun new_updates ->
     Printf.fprintf file "%f " (Ptime.to_float_s (Ptime_clock.now()));
-    let new_string_updates = List.map (Config.LogCoder.encode_string) new_updates in 
+    let new_string_updates = List.map (fun thing -> Config.LogCoder.encode_string thing None) new_updates in 
     Printf.fprintf file "%f " (Ptime.to_float_s (Ptime_clock.now()));
     perform_update new_string_updates
 

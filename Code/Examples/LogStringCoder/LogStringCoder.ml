@@ -17,7 +17,7 @@ module BookLogStringCoder: Blockchain.I_LogStringCoder with type t = string * st
     let book = ("book_id", str book_id) in
     Ezjsonm.dict [time;send;receiver;book]
 
-  let encode_string (value:t) = 
+  let encode_string (value:t) _ = 
     let json = build_json value
     in Ezjsonm.to_string json
 
@@ -81,9 +81,13 @@ module TestLogStringCoder: Blockchain.I_LogStringCoder with type t = string * st
     let rate = ("rate", Ezjsonm.float rate) in
     Ezjsonm.dict [time;machine;txn;rate]
 
-  let encode_string (value:t) = 
-    let json = build_json value
+  let encode_string ((v1,v2,v3):t) = function 
+    | None ->
+      let json = build_json (v1,v2,v3)
+      in Ezjsonm.to_string json
+    | Some x -> let json = build_json (v1,x,v3)
     in Ezjsonm.to_string json
+
 
   let rec get_value_string (dict:(string * Ezjsonm.value) list) desired_key = match dict with 
     | [] -> ""

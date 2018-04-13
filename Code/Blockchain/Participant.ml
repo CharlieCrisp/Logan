@@ -3,7 +3,7 @@ open Lwt.Infix
 module type I_LogStringCoder = sig
   type t
   type log_item
-  val encode_string: t -> string
+  val encode_string: t -> string option -> string
   val decode_string: string -> t option
   val decode_log_item: string -> log_item
   val is_equal: log_item -> log_item -> bool
@@ -85,7 +85,7 @@ module Make(Config: I_ParticipantConfig): I_Participant with type t = Config.t =
       IrminLogMem.clone_force mempool_master_branch "wip" >>= fun wip_branch ->
       IrminLogMem.append ~message:"Entry added to the blockchain" wip_branch ~path:[] message >>= fun _ ->
       IrminLogMem.merge wip_branch ~into:mempool_master_branch in
-    let message = Config.LogCoder.encode_string value in 
+    let message = Config.LogCoder.encode_string value None in 
     if (not(!has_synced)) then pull_mem () >>= fun _ ->
       has_synced := true;
       add_local_message_to_mempool message >>= fun _ -> Lwt.return `Ok 
