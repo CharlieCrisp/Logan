@@ -224,7 +224,7 @@ module Make (Config: I_Config) : I_Leader = struct
     buffered_updates := [];
     Printf.fprintf file "%f " (Ptime.to_float_s (Ptime_clock.now()));
     update_cursors latest_known_part_cursor >>= fun _ ->
-    if all_updates = [] then run_leader() else
+    if all_updates = [] then begin close_out file; run_leader() end else
     let perform_update updates = (  
       add_list_to_blockchain updates >>= fun _ ->
       Printf.fprintf file "%f\n" (Ptime.to_float_s (Ptime_clock.now()));
