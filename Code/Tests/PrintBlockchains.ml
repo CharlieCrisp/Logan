@@ -34,7 +34,7 @@ let print_txn str =
   let time_int = (int_of_float time_orig) mod 100000 in
   let time = (float_of_int time_int) +. time_orig -. (float_of_int (int_of_float time_orig)) in 
   match txn with 
-    | Some((machine, txn, rate)) -> Printf.printf "Time: %.3f; Machine id: %s; Txn id: %s; Rate: %f\n%!" time machine txn rate
+    | Some((machine, txn, rate)) -> Printf.printf "Time: \027[95m%.3f\027[39m; Machine id: %s; Txn id: %s; Rate: %f\n%!" time machine txn rate
     | None -> Printf.printf "Could Not Decode!\n%!"
 
 let rec print_list lst = match lst with 
