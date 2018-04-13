@@ -11,6 +11,7 @@ module type I_LogStringCoder = sig
   val get_time: log_item -> float
   val get_rate: log_item -> float
   val get_machine: log_item -> string
+  val get_id: log_item -> int
 end
 
 module type I_ParticipantConfig = sig

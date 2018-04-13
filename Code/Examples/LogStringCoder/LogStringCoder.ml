@@ -58,6 +58,8 @@ module BookLogStringCoder: Blockchain.I_LogStringCoder with type t = string * st
   let get_time item = item.time
   let get_rate item = 0.0
   let get_machine item = ""
+
+  let get_id _ = 0
 end
 
 module TestLogStringCoder: Blockchain.I_LogStringCoder with type t = string * string * float = struct
@@ -127,4 +129,5 @@ module TestLogStringCoder: Blockchain.I_LogStringCoder with type t = string * st
 
   let get_rate item = item.rate
   let get_machine item = item.machine_id
+  let get_id item = int_of_string item.txn_id
 end

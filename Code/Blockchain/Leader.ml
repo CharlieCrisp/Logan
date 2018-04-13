@@ -43,6 +43,8 @@ module Make (Config: I_Config) : I_Leader = struct
   let buffered_updates = ref []
   let updates_to_be_added = ref []
   let cache_branch = ref None
+  let txn_queue = Queue.create ()
+  let last_popped = ref 0
 
   exception Validator_Not_Supplied
   exception Could_Not_Initialise_Blockchain
@@ -96,6 +98,7 @@ module Make (Config: I_Config) : I_Leader = struct
     let txn_opt = Config.LogCoder.decode_string value in
     match txn_opt with 
       | Some(txn) -> let txn_string = Config.LogCoder.encode_string txn in
+        Queue.push (Ptime.to_float_s (Ptime_clock.now())) txn_queue;
         IrminLogBlock.append ~message:"Entry added to the blockchain" branch ~path:path txn_string
       | _ -> Printf.printf "Couldn't reconstruct log item\n%!"; Lwt.return ()) in 
     match !cache_branch with 
@@ -279,7 +282,23 @@ module Make (Config: I_Config) : I_Leader = struct
   let merge_blockchain () = 
     IrminLogBlock.get_branch blockchain_repo "push-cache" >>= fun push_cache ->
     IrminLogBlock.merge push_cache ~into:blockchain_master_branch
-    
+
+  let get_latest_id () = 
+    (*return id of latest item in blockchain master*)
+    IrminLogBlock.get_cursor blockchain_master_branch ~path:path >>= function
+      | Some curs -> (
+        IrminLogBlock.read curs ~num_items:1 >>= function 
+          | [x], _ -> let id = Config.LogCoder.get_id (Config.LogCoder.decode_log_item x) in
+            Lwt.return @@ Some id
+          | _ -> Lwt.return @@ None)
+      | None -> Lwt.return @@ None
+  
+  let rec pop_and_log file time = function
+    | 0 -> ()
+    | n -> let timestamp = Queue.take txn_queue in 
+      Printf.fprintf file  "%f\n%!" (time -. timestamp);
+      pop_and_log file time (n-1)
+
   let rec push_replicas () =
     let update_push_cache_branch = 
     "cd /tmp/ezirminl/lead/blockchain; " ^ 
@@ -292,7 +311,17 @@ module Make (Config: I_Config) : I_Leader = struct
     let commands = List.map get_replica_command Config.replicas in
     Lwt_list.iter_p (fun com -> Lwt.return @@ Sys.command com >>= fun _ -> Lwt.return ()) commands >>= 
     merge_blockchain >>= 
-    push_replicas
+    get_latest_id >>= function
+      | Some latest_id -> (
+        let n = latest_id - !last_popped in
+        let now = Ptime.to_float_s (Ptime_clock.now()) in
+        let file = open_out_gen  [Open_creat; Open_text; Open_append] 0o640 "confirmationtimes.log" in
+        pop_and_log file now n;
+        close_out file;
+        last_popped := latest_id;
+        push_replicas ()
+      )
+      | None -> push_replicas()
 
   let init_leader () = 
     Logger.info "Starting Leader";
