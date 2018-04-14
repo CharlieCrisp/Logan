@@ -301,15 +301,27 @@ module Make (Config: I_Config) : I_Leader = struct
       Printf.fprintf file  "%f\n%!" (time -. timestamp);
       pop_and_log file time (n-1)
 
+  let push_setup () = 
+    let rec add_remotes_to_repo str = (function 
+      | [] -> str
+      | x::xs -> let cmd = Printf.sprintf "git remote set-url --add --push pushes ssh://%s/tmp/ezirminl/replica/blockchain; " x in
+        add_remotes_to_repo (str ^ cmd) xs) in
+    let cd = "cd /tmp/ezirminl/lead/blockchain; " in
+    let add_remote = Printf.sprintf "git remote add pushes ssh://%s/tmp/ezirminl/replica/blockchain; " (List.hd Config.replicas) in
+    let command = add_remotes_to_repo (cd ^ add_remote) Config.replicas in
+    let _ = Sys.command command in ()
+    
   let rec push_replicas () =	 
     match !cache_branch with 
       | None -> push_replicas ()
       | Some cache_branch -> (
         IrminLogBlock.clone_force cache_branch "push-cache" >>= fun push_cache_branch ->
-        let get_replica_command str = Printf.sprintf "cd /tmp/ezirminl/lead/blockchain; git push ssh://%s/tmp/ezirminl/replica/blockchain push-cache:cache" str in 
-        let commands = List.map get_replica_command Config.replicas in
-        Lwt_list.iter_p (fun com -> Lwt.return @@ Sys.command com >>= fun _ -> Lwt.return ()) commands >>= 
-        merge_blockchain >>= 
+        if Config.replicas != [] then begin 
+          let push_command = Printf.sprintf "cd /tmp/ezirminl/lead/blockchain; git push pushes internal push-cache" in 
+          let _ = Sys.command push_command in
+          ()
+        end;
+        merge_blockchain () >>= 
         get_latest_id >>= function
           | Some latest_id -> (
             let n = latest_id - !last_popped in
@@ -333,7 +345,7 @@ module Make (Config: I_Config) : I_Leader = struct
       register_handlers ();
       add_all_remotes () >>= fun _ ->
       init_branches_and_cursors();
-      Lwt.async push_replicas;
+      Lwt.async (push_setup(); push_replicas);
       Printf.printf "Ready\n%!";
       run_leader())
 end;;
