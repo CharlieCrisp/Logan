@@ -1,9 +1,9 @@
 clear
 format long;
-data = importdata("../../../../Documents/PartIILogs/PureGit/multiple_throughput_irmin_git.log", ' ');
+data = importdata("~/Documents/PartIILogs/PureGit/multiple_throughput_irmin_git.log", ' ');
 
 len = length(unique(data(:,3)));
-[thing, throughput_data] = get_data_means(data,len);
+[thing, throughput_data] = get_alternate_data_means(data,len);
 
 latencies = ones(len, 5000);
 row = 0;
@@ -41,12 +41,12 @@ hold off
 
 txt = cell(len,1);
 for i = 1:len
-   txt{i}= sprintf('Throughput: %2.0f', throughput_data(i));
+   txt{i}= sprintf('Applied Throughput: %2.0f', throughput_data(i));
 end
 legend(txt, "Location", 'northwest')
 
-xlabel("Mempool size");
+xlabel("Mempool size, txns");
 ylim([0 160]);
 yticks(0:20:160);
-ylabel("Latency");
+ylabel("Latency, s");
 grid on

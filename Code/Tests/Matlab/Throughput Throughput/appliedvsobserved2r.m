@@ -8,8 +8,9 @@ hold on
 scatter(applied,observed,'x');
 
 %plot reference line
-ref = 1:1:30;
+ref = 0:1:100;
 plot(ref,ref);
+hold off
 
-xlabel("Applied Throughput");
-ylabel("Observed Throughput");
+xlabel("Applied Throughput, tps");
+ylabel("Observed Throughput, tps");

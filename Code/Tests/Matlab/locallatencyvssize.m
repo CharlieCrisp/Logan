@@ -1,38 +1,29 @@
 clear
 format long;
-data = importdata("../../../../Documents/PartIILogs/single_local_worker_validated.log", ' ');
+data = importdata("../../../../Documents/PartIILogs/single_local_worker_new.log", ' ');
 % data_unvalidated = importdata("../../../../Documents/PartIILogs/local_latency_blockchain_size.log", ' ');
 
 %filter NaN rows
 data(any(isnan(data), 2), :) = [];
 data = flipud(data);
-% data_unvalidated(any(isnan(data_unvalidated), 2), :) = [];
-% data_unvalidated = flipud(data_unvalidated);
 
 %calculate latencies
 result = data(:,2) - data(:,1);
 result = result * 1000;
-% result_unvalidated = data_unvalidated(:,2) - data_unvalidated(:,1);
-% result_unvalidated = result_unvalidated * 1000;
 
-%calculate average of every n items
-n = 70;
-s1 = size(result, 1);
-M  = s1 - mod(s1, n);
-y  = reshape(result(1:M), n, []);
-result = transpose(sum(y, 1) / n);
+transactions = 1:length(result);
+outliers = result < 50;
+result = result(outliers)';
+transactions = transactions(outliers);
 
-% s1_u = size(result_unvalidated,1);
-% M_u = s1_u - mod(s1_u,n);
-% y_u = reshape(result_unvalidated(1:M_u), n, []);
-% result_unvalidated = transpose(sum(y_u, 1) / n);
+gap = 20;
+result = result(1:gap:end);
+transactions = transactions(1:gap:end);
 
 %plot
-transactions = n*(1:length(result));
-% transactions_u = n*(1:length(result_unvalidated));
-plot(transactions, result); %, transactions_u, result_unvalidated);
+plot(transactions, result);
 ylim([0 100]);
-xlim([0 4500]);
-xlabel("Blockchain Size, transactions");
+xlim([0 5000]);
+xlabel("Blockchain Size, txns");
 ylabel("Latency, ms");
 %legend("With validation","Without validation");

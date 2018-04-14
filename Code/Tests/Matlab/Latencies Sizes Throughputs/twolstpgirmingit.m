@@ -41,7 +41,7 @@ hold off
 
 txt = cell(len,1);
 for i = 1:len
-   txt{i}= sprintf('Throughput: %2.0f', throughput_data(i));
+   txt{i}= sprintf('Applied Throughput: %2.0f', throughput_data(i));
 end
 legend(txt, "Location", 'northwest')
 
