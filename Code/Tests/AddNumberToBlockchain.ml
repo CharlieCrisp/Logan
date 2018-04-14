@@ -59,14 +59,16 @@ let add_transactions n =
       add (n-1)) in
   let rec add_with_delay del = ( function 
     | 0 -> Printf.printf "\n%!"; Lwt.return ()
-    | n -> let now = get_time () in
-    match !next_time with 
-      | time when time > now -> (
+    | n -> let now = get_time () in (
+      if !next_time < now then begin
         Participant.add_transaction_to_mempool (string_of_int(!id), string_of_int(!itr - n + 1), del) >>= fun _ ->
         print_status n;
         next_time := !next_time +. del;
-        add_with_delay del (n-1))
-      | _ -> add_with_delay del n )
+        add_with_delay del (n-1)
+      end
+      else begin 
+        add_with_delay del n 
+      end))
   in match !delay with 
     | None -> add n
     | Some delay -> next_time := (Ptime.to_float_s (Ptime_clock.now())) +. delay;
