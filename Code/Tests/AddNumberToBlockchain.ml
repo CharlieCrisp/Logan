@@ -5,7 +5,7 @@ bin/AddNumberToBlockchain -r remoteuser@remotehost -i 1 -s 2018031233300 -n 1000
 
 open Lwt.Infix
 open Ptime
-let last_time = ref (Ptime.to_float_s (Ptime_clock.now()))
+let next_time = ref 0.0
 let remote_uri = ref None
 let itr = ref 0
 let id = ref 0
@@ -51,22 +51,26 @@ let get_time () = Ptime.to_float_s (Ptime_clock.now())
 module Participant = Blockchain.MakeParticipant(Config)
 let print_status n = Printf.printf "Added %i transactions \r%!" (!itr - n + 1)
 
-let rec add_transactions = function
-  | 0 -> Printf.printf "\n%!"; Lwt.return ()
-  | n -> 
-    (match !delay with 
-      | None -> Participant.add_transaction_to_mempool (string_of_int(!id), string_of_int(!itr - n + 1), 1.0) >>= fun _ ->
-        print_status n;
-        add_transactions (n-1)
-      | Some(del) -> let now = get_time () in
-        let real_delay = now -. !last_time in
-        if (real_delay < del) then begin
-        Lwt_main.run @@ Lwt_unix.sleep (del -. real_delay) end;
-        last_time := now;
+let add_transactions n =
+  let rec add = (function 
+    | 0 -> Printf.printf "\n%!"; Lwt.return ()
+    | n -> Participant.add_transaction_to_mempool (string_of_int(!id), string_of_int(!itr - n + 1), 1.0) >>= fun _ ->
+      print_status n;
+      add (n-1)) in
+  let rec add_with_delay del = ( function 
+    | 0 -> Printf.printf "\n%!"; Lwt.return ()
+    | n -> let now = get_time () in
+    match !next_time with 
+      | time when time > now -> (
         Participant.add_transaction_to_mempool (string_of_int(!id), string_of_int(!itr - n + 1), del) >>= fun _ ->
         print_status n;
-        add_transactions(n-1))
-
+        next_time := !next_time +. del;
+        add_with_delay del (n-1))
+      | _ -> add_with_delay del n )
+  in match !delay with 
+    | None -> add n
+    | Some delay -> next_time := (Ptime.to_float_s (Ptime_clock.now())) +. delay;
+      add_with_delay delay n
 
 let rec test_blockchain_start() = 
   let now = Ptime_clock.now() in 
