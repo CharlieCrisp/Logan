@@ -306,10 +306,12 @@ module Make (Config: I_Config) : I_Leader = struct
       | [] -> str
       | x::xs -> let cmd = Printf.sprintf "git remote set-url --add --push pushes ssh://%s/tmp/ezirminl/replica/blockchain; " x in
         add_remotes_to_repo (str ^ cmd) xs) in
-    let cd = "cd /tmp/ezirminl/lead/blockchain; " in
-    let add_remote = Printf.sprintf "git remote add pushes ssh://%s/tmp/ezirminl/replica/blockchain; " (List.hd Config.replicas) in
-    let command = add_remotes_to_repo (cd ^ add_remote) Config.replicas in
-    let _ = Sys.command command in ()
+    if Config.replicas != [] then begin 
+      let cd = "cd /tmp/ezirminl/lead/blockchain; " in
+      let add_remote = Printf.sprintf "git remote add pushes ssh://%s/tmp/ezirminl/replica/blockchain; " (List.hd Config.replicas) in
+      let command = add_remotes_to_repo (cd ^ add_remote) Config.replicas in
+      let _ = Sys.command command in () 
+    end
     
   let rec push_replicas () =	 
     match !cache_branch with 
