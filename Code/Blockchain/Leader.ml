@@ -274,7 +274,7 @@ module Make (Config: I_Config) : I_Leader = struct
     update_mempool >>= fun _ ->
     Lwt.return @@ Printf.fprintf file "%f " (Ptime.to_float_s (Ptime_clock.now())) >>= 
     process_new_updates >>= fun latest_known_part_cursor ->
-    Lwt.return @@ Printf.fprintf file "% f" (Ptime.to_float_s (Ptime_clock.now())) >>=  fun _ ->
+    Lwt.return @@ Printf.fprintf file "%f " (Ptime.to_float_s (Ptime_clock.now())) >>=  fun _ ->
     let all_updates = List.map (fun (x,_) -> x) !updates_to_be_added in 
     Printf.fprintf file "%f " (Ptime.to_float_s (Ptime_clock.now()));
     updates_to_be_added := !buffered_updates;
@@ -284,7 +284,7 @@ module Make (Config: I_Config) : I_Leader = struct
     if all_updates = [] then begin close_out file; run_leader() end else
     let perform_update updates = (  
       add_list_to_blockchain updates >>= fun _ ->
-      Printf.fprintf file "%f\n" (Ptime.to_float_s (Ptime_clock.now()));
+      Printf.fprintf file "%f" (Ptime.to_float_s (Ptime_clock.now()));
       push_replicas() >>= fun _ ->
       Printf.fprintf file "%f\n" (Ptime.to_float_s (Ptime_clock.now()));
       close_out file;
