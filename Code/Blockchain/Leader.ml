@@ -212,6 +212,61 @@ module Make (Config: I_Config) : I_Leader = struct
         Lwt.return (flat_map list))
       | _ -> Lwt.return []
 
+  let merge_blockchain () = 
+    IrminLogBlock.get_branch blockchain_repo "push-cache" >>= fun push_cache ->
+    IrminLogBlock.merge push_cache ~into:blockchain_master_branch
+
+  let get_latest_id () = 
+    (*return id of latest item in blockchain master*)
+    IrminLogBlock.get_cursor blockchain_master_branch ~path:path >>= function
+      | Some curs -> (
+        IrminLogBlock.read curs ~num_items:1 >>= function 
+          | [x], _ when x <> "Genesis Commit" -> let id = Config.LogCoder.get_id (Config.LogCoder.decode_log_item x) in
+            Lwt.return @@ Some id
+          | _ -> Lwt.return @@ None)
+      | None -> Lwt.return @@ None
+  
+  let rec pop_and_log file time = function
+    | 0 -> ()
+    | n -> let timestamp = Queue.take txn_queue in 
+      Printf.fprintf file  "%f\n%!" (time -. timestamp);
+      pop_and_log file time (n-1)
+
+  let push_setup () = 
+    let rec add_remotes_to_repo str = (function 
+      | [] -> str
+      | x::xs -> let cmd = Printf.sprintf "git remote set-url --add --push pushes ssh://%s/tmp/ezirminl/replica/blockchain; " x in
+        add_remotes_to_repo (str ^ cmd) xs) in
+    if Config.replicas != [] then begin 
+      let cd = "cd /tmp/ezirminl/lead/blockchain; " in
+      let add_remote = Printf.sprintf "git remote add pushes ssh://%s/tmp/ezirminl/replica/blockchain; " (List.hd Config.replicas) in
+      let command = add_remotes_to_repo (cd ^ add_remote) Config.replicas in
+      let _ = Sys.command command in () 
+    end
+    
+  let push_replicas () =	 
+    match !cache_branch with 
+      | None -> Lwt.return ()
+      | Some cache_branch -> (
+        IrminLogBlock.clone_force cache_branch "push-cache" >>= fun push_cache_branch ->
+        if Config.replicas != [] then begin 
+          let push_command = Printf.sprintf "cd /tmp/ezirminl/lead/blockchain; git push pushes internal push-cache" in 
+          let _ = Sys.command push_command in
+          ()
+        end;
+        merge_blockchain () >>= 
+        get_latest_id >>= function
+          | Some latest_id -> (
+            let n = latest_id - !last_popped in
+            let now = Ptime.to_float_s (Ptime_clock.now()) in
+            let file = open_out_gen  [Open_creat; Open_text; Open_append] 0o640 "confirmationtimes.log" in
+            pop_and_log file now n;
+            close_out file;
+            last_popped := latest_id;
+            Lwt.return ()
+          )
+          | None -> Lwt.return ())
+    
   let rec run_leader () = 
     let file = open_out_gen  [Open_creat; Open_text; Open_append] 0o640 "delays.log" in
     if !interrupted_bool then Lwt_mvar.put interrupted_mvar true >>= fun _ -> Lwt.return () else
@@ -229,6 +284,8 @@ module Make (Config: I_Config) : I_Leader = struct
     if all_updates = [] then begin close_out file; run_leader() end else
     let perform_update updates = (  
       add_list_to_blockchain updates >>= fun _ ->
+      Printf.fprintf file "%f\n" (Ptime.to_float_s (Ptime_clock.now()));
+      push_replicas() >>= fun _ ->
       Printf.fprintf file "%f\n" (Ptime.to_float_s (Ptime_clock.now()));
       close_out file;
       Lwt.return @@ Logger.info (Printf.sprintf "\027[95mAdded %i New Updates\027[39m\n%!" (List.length updates))>>= fun _ ->
@@ -281,61 +338,6 @@ module Make (Config: I_Config) : I_Leader = struct
       ) >>= 
       Lwt.return
 
-  let merge_blockchain () = 
-    IrminLogBlock.get_branch blockchain_repo "push-cache" >>= fun push_cache ->
-    IrminLogBlock.merge push_cache ~into:blockchain_master_branch
-
-  let get_latest_id () = 
-    (*return id of latest item in blockchain master*)
-    IrminLogBlock.get_cursor blockchain_master_branch ~path:path >>= function
-      | Some curs -> (
-        IrminLogBlock.read curs ~num_items:1 >>= function 
-          | [x], _ when x <> "Genesis Commit" -> let id = Config.LogCoder.get_id (Config.LogCoder.decode_log_item x) in
-            Lwt.return @@ Some id
-          | _ -> Lwt.return @@ None)
-      | None -> Lwt.return @@ None
-  
-  let rec pop_and_log file time = function
-    | 0 -> ()
-    | n -> let timestamp = Queue.take txn_queue in 
-      Printf.fprintf file  "%f\n%!" (time -. timestamp);
-      pop_and_log file time (n-1)
-
-  let push_setup () = 
-    let rec add_remotes_to_repo str = (function 
-      | [] -> str
-      | x::xs -> let cmd = Printf.sprintf "git remote set-url --add --push pushes ssh://%s/tmp/ezirminl/replica/blockchain; " x in
-        add_remotes_to_repo (str ^ cmd) xs) in
-    if Config.replicas != [] then begin 
-      let cd = "cd /tmp/ezirminl/lead/blockchain; " in
-      let add_remote = Printf.sprintf "git remote add pushes ssh://%s/tmp/ezirminl/replica/blockchain; " (List.hd Config.replicas) in
-      let command = add_remotes_to_repo (cd ^ add_remote) Config.replicas in
-      let _ = Sys.command command in () 
-    end
-    
-  let rec push_replicas () =	 
-    match !cache_branch with 
-      | None -> push_replicas ()
-      | Some cache_branch -> (
-        IrminLogBlock.clone_force cache_branch "push-cache" >>= fun push_cache_branch ->
-        if Config.replicas != [] then begin 
-          let push_command = Printf.sprintf "cd /tmp/ezirminl/lead/blockchain; git push pushes internal push-cache" in 
-          let _ = Sys.command push_command in
-          ()
-        end;
-        merge_blockchain () >>= 
-        get_latest_id >>= function
-          | Some latest_id -> (
-            let n = latest_id - !last_popped in
-            let now = Ptime.to_float_s (Ptime_clock.now()) in
-            let file = open_out_gen  [Open_creat; Open_text; Open_append] 0o640 "confirmationtimes.log" in
-            pop_and_log file now n;
-            close_out file;
-            last_popped := latest_id;
-            push_replicas ()
-          )
-          | None -> push_replicas())
-
   let init_leader () = 
     Logger.info "Starting Leader";
     register_handlers();  
@@ -347,7 +349,7 @@ module Make (Config: I_Config) : I_Leader = struct
       register_handlers ();
       add_all_remotes () >>= fun _ ->
       init_branches_and_cursors();
-      Lwt.async (push_setup(); push_replicas);
+      push_setup();
       Printf.printf "Ready\n%!";
       run_leader())
 end;;
