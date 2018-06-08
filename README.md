@@ -3,7 +3,7 @@
 # Logan 
 Cambridge CST Part II Project - Building a Blockchain Library for OCaml
 
-This project creates a blockchain using Irmin and a leader-based consensus protocol. 
+Logan is a blockchain library for OCaml. It allows you to create and run blockchain applications with custom datatypes. It uses Irmin as a backend and a leader-based consensus protocol. 
 
 ## Building Logan
 To build the project, navigate to the root of the repository and type...
